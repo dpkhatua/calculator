@@ -2,237 +2,575 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Notes">
-<meta name="theme-color" content="#2f6f4f">
-<link rel="manifest" href="./manifest.json">
-<link rel="icon" href="./icon-192.png">
-<link rel="apple-touch-icon" href="./icon-192.png">
-<title>Notes & Reminders</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scientific Calculator — Research Edition</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js"></script>
 <style>
   :root{
-    --bg:#f6f7f5;
-    --card:#ffffff;
-    --ink:#1e2320;
-    --muted:#6b756f;
-    --accent:#2f6f4f;
-    --accent-soft:#e6f0ea;
-    --border:#e2e5e2;
-    --danger:#b3492f;
+    --bg:#0f1115;
+    --panel:#181b22;
+    --panel2:#20242e;
+    --accent:#5b8cff;
+    --accent2:#ff9f5b;
+    --text:#eef0f5;
+    --muted:#8a90a2;
+    --danger:#ff5b6e;
+    --ok:#4fd18b;
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;}
+  *{box-sizing:border-box;}
   body{
+    margin:0;
+    min-height:100vh;
     background:var(--bg);
-    color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    padding-bottom:60px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:20px;
+    color:var(--text);
   }
-  #app{max-width:640px;margin:0 auto;padding:16px;}
-  header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding-top:8px;flex-wrap:wrap;gap:8px;}
-  header h1{font-size:20px;margin:0;font-weight:700;}
-  .header-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
-  .icon-btn{
-    background:var(--card);border:1px solid var(--border);color:var(--ink);
-    padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;
-    max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  .app{
+    display:flex;
+    gap:16px;
+    max-width:980px;
+    width:100%;
   }
-  .icon-btn:active{background:var(--accent-soft);}
+  .calc{
+    background:var(--panel);
+    border-radius:18px;
+    padding:18px;
+    width:400px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.4);
+    flex-shrink:0;
+  }
+  .tabs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    margin-bottom:14px;
+    background:var(--panel2);
+    padding:4px;
+    border-radius:10px;
+  }
+  .tabs button{
+    flex:1 1 30%;
+    background:transparent;
+    color:var(--muted);
+    border:none;
+    border-radius:8px;
+    padding:7px 4px;
+    font-size:11.5px;
+    cursor:pointer;
+  }
+  .tabs button.active{background:var(--accent);color:#fff;}
+  .tabpanel{display:none;}
+  .tabpanel.active{display:block;}
 
-  .add-form{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
-  .add-form input[type=text]{
-    flex:1 1 100%;
-    padding:12px 14px;border:1px solid var(--border);border-radius:10px;
-    font-size:15px;background:var(--card);color:var(--ink);
+  .mode-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    margin-bottom:10px;
+    font-size:12px;
+    color:var(--muted);
   }
-  .add-form input[type=date]{
-    flex:1 1 auto;min-width:150px;
-    padding:12px 14px;border:1px solid var(--border);border-radius:10px;
-    font-size:14.5px;background:var(--card);color:var(--ink);
-  }
-  .add-form select{
-    flex:1;padding:10px;border:1px solid var(--border);border-radius:10px;
-    font-size:14px;background:var(--card);color:var(--ink);
-  }
-  .add-form button{
-    background:var(--accent);color:#fff;border:none;padding:10px 16px;
-    border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;
+  .mode-row label{display:flex;align-items:center;gap:4px;cursor:pointer;}
+  .mode-row select, .mode-row input[type=number]{
+    background:var(--panel2);
+    color:var(--text);
+    border:1px solid #2c3140;
+    border-radius:6px;
+    padding:3px 6px;
+    font-size:12px;
   }
 
-  .toolbar{margin-bottom:14px;}
-
-  .category{
-    background:var(--card);border:1px solid var(--border);border-radius:12px;
-    margin-bottom:10px;overflow:hidden;
+  .field-row{display:flex;gap:8px;margin-bottom:10px;}
+  .field-row label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
+  .field-row input, textarea, select{
+    width:100%;
+    background:var(--panel2);
+    color:var(--text);
+    border:1px solid #2c3140;
+    border-radius:8px;
+    padding:8px;
+    font-size:13px;
+    font-family:inherit;
   }
-  .category.depth-1, .category.depth-2, .category.depth-3{margin-left:16px;margin-top:8px;}
-  .cat-header{
-    display:flex;align-items:center;gap:6px;padding:12px 12px;cursor:pointer;
+  textarea{resize:vertical;min-height:70px;}
+  .results{
+    background:var(--panel2);
+    border-radius:10px;
+    padding:12px;
+    font-size:13px;
+    line-height:1.6;
+    margin-top:10px;
+    white-space:pre-wrap;
   }
-  .cat-toggle{
-    background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;
-    width:20px;flex:none;
+  .results.error{color:var(--danger);}
+  .compute-btn{
+    width:100%;
+    background:var(--accent);
+    color:#fff;
+    padding:10px;
+    border-radius:10px;
+    font-size:14px;
+    margin-top:6px;
   }
-  .cat-name{flex:1;font-weight:600;font-size:15px;}
-  .cat-count{
-    font-size:11px;color:var(--muted);background:var(--accent-soft);
-    padding:2px 8px;border-radius:20px;margin-right:4px;
+  .matrix-grid{
+    display:grid;
+    gap:6px;
+    margin-bottom:8px;
   }
-  .cat-actions{display:flex;gap:4px;}
-  .mini-btn{
-    background:none;border:none;font-size:15px;padding:4px 6px;cursor:pointer;color:var(--muted);
-  }
-  .mini-btn:active{color:var(--accent);}
-  .cat-body{padding:0 12px 12px 12px;}
-  .cat-children{margin-top:4px;}
-
-  ul.item-list{list-style:none;margin:0;padding:0;}
-  ul.item-list li{
-    display:flex;align-items:flex-start;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border);
-  }
-  ul.item-list li:last-child{border-bottom:none;}
-  .chk{
-    width:22px;height:22px;flex:none;margin-top:2px;accent-color:var(--accent);cursor:pointer;
-  }
-  .item-main{flex:1;min-width:0;}
-  .item-text{font-size:14.5px;word-break:break-word;}
-  .item-meta{font-size:11px;color:var(--muted);margin-top:2px;}
-  .item-edit{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 6px;}
-  .item-edit:active{color:var(--accent);}
-  .item-del{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;}
-  .item-del:active{color:var(--danger);}
-  .completed .item-text{text-decoration:line-through;color:var(--muted);}
-
-  .completed-toggle{
-    margin-top:8px;background:var(--accent-soft);border:none;color:var(--accent);
-    font-size:12.5px;font-weight:600;padding:7px 10px;border-radius:8px;cursor:pointer;width:100%;text-align:left;
-  }
-  .completed-body{margin-top:6px;}
-
-  .empty-hint{font-size:12.5px;color:var(--muted);padding:6px 4px;font-style:italic;}
-
-  .banner{
-    background:#fff6e9;border:1px solid #f0d9a8;border-radius:12px;
-    padding:10px 12px;margin-bottom:14px;
-  }
-  .banner-title{font-size:12.5px;font-weight:700;color:#8a5b12;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
-  .banner-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13.5px;border-top:1px solid #f0d9a8;}
-  .banner-row:first-of-type{border-top:none;}
-  .banner-row .b-what{color:var(--ink);}
-  .banner-row .b-cat{color:var(--muted);font-size:12px;}
-  .banner-row .b-due{white-space:nowrap;font-weight:600;font-size:12.5px;}
-  .b-due.due-overdue{color:var(--danger);}
-  .b-due.due-soon{color:#8a5b12;}
-
-  .item-note{font-size:12.5px;color:var(--muted);margin-top:2px;font-style:italic;}
-  .item-deadline{font-size:11.5px;font-weight:600;margin-top:2px;display:inline-block;}
-  .item-deadline.due-overdue{color:var(--danger);}
-  .item-deadline.due-soon{color:#8a5b12;}
-  .item-deadline.due-later{color:var(--muted);font-weight:normal;}
-
-  .section-header{display:flex;align-items:center;justify-content:space-between;margin:26px 0 4px;}
-  .section-header h2{font-size:13px;margin:0;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
-  .section-sub{font-size:12.5px;color:var(--muted);margin-bottom:12px;}
-
-  .checklist{border-left:4px solid var(--accent);}
-  ul.item-list li.checked{background:var(--accent-soft);border-radius:8px;padding-left:6px;}
-  ul.item-list li.checked .item-text{color:var(--accent);}
-
-  /* Modal */
-  .modal-overlay{
-    position:fixed;inset:0;background:rgba(20,25,22,0.45);display:none;
-    align-items:flex-end;justify-content:center;z-index:100;
-  }
-  .modal-overlay.open{display:flex;}
-  .modal-box{
-    background:var(--card);width:100%;max-width:480px;border-radius:16px 16px 0 0;
-    padding:18px;animation:slideup .15s ease-out;
-  }
-  @media (min-width:520px){
-    .modal-overlay{align-items:center;}
-    .modal-box{border-radius:16px;}
-  }
-  @keyframes slideup{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
-  .modal-title{font-size:16px;font-weight:700;margin-bottom:12px;}
-  .modal-body input[type=text], .modal-body input[type=date], .modal-body select{
-    width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;
-    font-size:15px;margin-bottom:10px;background:var(--bg);color:var(--ink);
-    box-sizing:border-box;
-  }
-  .modal-msg{font-size:14px;color:var(--ink);margin-bottom:14px;line-height:1.4;}
-  .modal-footer{display:flex;gap:8px;justify-content:flex-end;}
-  .modal-footer button{
-    padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;
-  }
-  .btn-cancel{background:var(--bg);color:var(--ink);border:1px solid var(--border) !important;}
-  .btn-confirm{background:var(--accent);color:#fff;}
-  .btn-danger{background:var(--danger);color:#fff;}
-
-  .drive-row{display:flex;flex-direction:column;gap:8px;margin-bottom:4px;}
-  .drive-btn{width:100%;padding:12px;border-radius:10px;border:none;font-weight:600;font-size:14px;cursor:pointer;}
-  .drive-btn.primary{background:var(--accent);color:#fff;}
-  .drive-btn.secondary{background:var(--bg);border:1px solid var(--border) !important;color:var(--ink);}
-  .drive-btn:disabled{opacity:.55;cursor:default;}
-  .drive-status{font-size:12.5px;color:var(--muted);margin:2px 0 12px;line-height:1.5;}
-  .drive-link{color:var(--accent);text-decoration:underline;cursor:pointer;background:none;border:none;font-size:12.5px;padding:0;}
-
+  .matrix-grid input{text-align:center;padding:8px 4px;}
+  .subhead{font-size:13px;color:var(--accent2);margin:12px 0 6px;font-weight:600;}
   .toast{
-    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
-    background:#1e2320;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;
-    opacity:0;pointer-events:none;transition:opacity .2s;z-index:200;
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#2a2f3a;
+    color:var(--text);
+    padding:10px 18px;
+    border-radius:10px;
+    font-size:13px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease;
+    z-index:50;
   }
   .toast.show{opacity:1;}
+
+  /* ===================== Physical calculator body ===================== */
+  .device{
+    background:linear-gradient(180deg,#31353f,#1b1e25);
+    border-radius:20px;
+    padding:14px 14px 18px;
+    margin-bottom:6px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06), inset 0 -2px 6px rgba(0,0,0,.4);
+  }
+  .brandplate{
+    text-align:center;
+    color:#7d8496;
+    font-size:9px;
+    letter-spacing:3px;
+    margin-bottom:8px;
+    text-transform:uppercase;
+  }
+  .brandplate strong{
+    display:block;
+    color:#d3d7e2;
+    font-size:12.5px;
+    letter-spacing:1.5px;
+    margin-bottom:2px;
+  }
+  .lcd-screen{
+    background:#c7d8c2;
+    border-radius:8px;
+    padding:8px 10px;
+    margin-bottom:10px;
+    box-shadow:inset 0 2px 8px rgba(0,0,0,.35);
+    font-family:'Courier New',Courier,monospace;
+  }
+  .lcd-badges{
+    display:flex;
+    gap:8px;
+    font-size:9px;
+    color:#3a4a3a;
+    min-height:12px;
+    letter-spacing:.5px;
+    font-weight:700;
+  }
+  .lcd-badges .b-on{color:#173a17;}
+  .lcd-badges .b-off{opacity:.28;}
+  #varSummaryLcd{font-size:9px;color:#3a4a3a;text-align:right;min-height:11px;}
+  #expression{
+    color:#4d5c49;
+    font-size:12px;
+    min-height:15px;
+    word-break:break-all;
+    text-align:right;
+    margin-bottom:2px;
+  }
+  #display{
+    width:100%;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:#152012;
+    font-size:24px;
+    text-align:right;
+    font-family:inherit;
+    word-break:break-all;
+  }
+  .settings-strip{
+    display:flex;
+    justify-content:flex-end;
+    gap:6px;
+    align-items:center;
+    margin-bottom:8px;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .settings-strip input{width:46px;padding:3px 5px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid #2c3140;border-radius:6px;}
+
+  .ctrl-row{display:flex;gap:6px;margin-bottom:6px;}
+  .ctrl-row button{
+    flex:1;
+    padding:8px 0;
+    font-size:10.5px;
+    font-weight:700;
+    border-radius:8px;
+    letter-spacing:.5px;
+    border:none;
+    cursor:pointer;
+  }
+  #shiftBtn{background:#caa143;color:#3a2a00;}
+  #shiftBtn.active{background:#ffd671;box-shadow:0 0 0 2px rgba(255,255,255,.35);}
+  #alphaBtn{background:#c95a94;color:#3a0620;}
+  #alphaBtn.active{background:#ff8fc2;box-shadow:0 0 0 2px rgba(255,255,255,.35);}
+  #modeBtn,#onBtn{background:#3a3f4c;color:#d7dae2;}
+
+  .dpad-row{display:flex;gap:6px;margin-bottom:10px;}
+  .dpad-row button{
+    flex:1;
+    padding:6px 0;
+    background:#2a2f3a;
+    color:#9aa0b2;
+    border-radius:8px;
+    font-size:13px;
+    border:none;
+    cursor:pointer;
+  }
+
+  .pkeys{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:6px;
+    margin-bottom:6px;
+  }
+  .pkeys.numpad{grid-template-columns:repeat(5,1fr);}
+  .pkey{
+    position:relative;
+    background:#2a2f3a;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    padding:11px 2px 6px;
+    min-height:42px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    transition:transform .05s ease, background .15s ease;
+  }
+  .pkey:active{transform:scale(0.94);}
+  .pkey .k-main{font-size:13px;color:#eef0f5;line-height:1;}
+  .pkey .k-shift{position:absolute;top:2px;left:4px;font-size:8px;color:#ffcf6b;}
+  .pkey .k-alpha{position:absolute;top:2px;right:4px;font-size:8px;color:#ff8fc2;}
+  .pkey.op{background:#333a4d;}
+  .pkey.op .k-main{color:var(--accent);}
+  .pkey.eq{background:var(--accent);}
+  .pkey.clear{background:#5a2a2a;}
+  .pkey.active-toggle{outline:2px solid #ffcf6b;outline-offset:-2px;}
+
+  .history-panel{
+    background:var(--panel);
+    border-radius:18px;
+    padding:18px;
+    width:280px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.4);
+    display:flex;
+    flex-direction:column;
+    max-height:90vh;
+  }
+  .history-panel h3{
+    margin:0 0 10px 0;
+    font-size:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .history-panel h3 .btns button{
+    background:none;
+    color:var(--muted);
+    font-size:11px;
+    padding:4px 6px;
+    border:none;
+    cursor:pointer;
+  }
+  #historyList{
+    list-style:none;
+    margin:0;
+    padding:0;
+    overflow-y:auto;
+    flex:1;
+  }
+  #historyList li{
+    padding:10px 8px;
+    border-bottom:1px solid #262b36;
+    cursor:pointer;
+    font-size:12.5px;
+  }
+  #historyList li:hover{background:var(--panel2);border-radius:8px;}
+  #historyList .expr{color:var(--muted);}
+  #historyList .res{color:var(--text);font-size:15px;margin-top:2px;}
+  #historyList .empty{color:var(--muted);text-align:center;padding:30px 0;font-size:13px;cursor:default;}
+  #historyList .empty:hover{background:none;}
+
+  @media (max-width:900px){
+    .app{flex-direction:column;align-items:center;}
+    .calc,.history-panel{width:100%;max-width:400px;}
+  }
 </style>
 </head>
 <body>
-<div id="app">
-  <header>
-    <h1>Notes &amp; Reminders</h1>
-    <div class="header-actions">
-      <button class="icon-btn" id="folderBtn" title="Auto-save to a local folder">🔗 Connect folder</button>
-      <button class="icon-btn" id="driveBtn" title="Backup to Google Drive">☁️ Drive Backup</button>
-      <button class="icon-btn" id="exportBtn">Export</button>
-      <button class="icon-btn" id="importBtn">Import</button>
-      <input type="file" id="importInput" accept="application/json" hidden>
+
+<div class="app">
+  <div class="calc">
+    <div class="tabs">
+      <button class="active" data-tab="sci">Calc</button>
+      <button data-tab="stats">Stats</button>
+      <button data-tab="matrix">Matrix</button>
+      <button data-tab="complex">Complex</button>
+      <button data-tab="graph">Graph</button>
+      <button data-tab="basen">Base-N</button>
     </div>
-  </header>
 
-  <div id="deadlineBanner"></div>
+    <!-- ===================== SCIENTIFIC / PHYSICAL KEYPAD TAB ===================== -->
+    <div class="tabpanel active" id="tab-sci">
+      <div class="device">
+        <div class="brandplate"><strong>Scientific Calculator</strong>graphing · shift · alpha</div>
 
-  <form class="add-form" id="addForm">
-    <input type="text" id="itemText" placeholder="New reminder or note…" required>
-    <select id="itemCategory"></select>
-    <button type="submit">Add</button>
-  </form>
-  <button type="button" class="drive-link" id="toggleDetailsBtn" style="margin:-6px 0 12px;">+ Add note / deadline</button>
-  <div class="add-form" id="detailsRow" style="display:none;">
-    <input type="text" id="itemNote" placeholder="Optional note">
-    <input type="date" id="itemDeadline">
+        <div class="lcd-screen">
+          <div class="lcd-badges">
+            <span id="badgeAngle" class="b-on">DEG</span>
+            <span id="badgeNotation" class="b-off">NORM</span>
+            <span id="badgeShift" class="b-off">S</span>
+            <span id="badgeAlpha" class="b-off">A</span>
+            <span id="badgeSto" class="b-off"></span>
+            <span style="flex:1;"></span>
+            <span id="badgeMem" class="b-off">M</span>
+          </div>
+          <div id="expression"></div>
+          <input id="display" type="text" value="0" autocomplete="off" spellcheck="false" inputmode="none">
+          <div id="varSummaryLcd"></div>
+        </div>
+
+        <div class="settings-strip">
+          <label>Precision <input type="number" id="precision" value="20" min="4" max="80"></label>
+        </div>
+
+        <div class="ctrl-row">
+          <button type="button" id="shiftBtn">SHIFT</button>
+          <button type="button" id="alphaBtn">ALPHA</button>
+          <button type="button" id="modeBtn">MODE</button>
+          <button type="button" id="onBtn">ON</button>
+        </div>
+        <div class="dpad-row">
+          <button type="button" id="dpadUp" title="Older history">▲</button>
+          <button type="button" id="dpadLeft" title="Cursor left">◀</button>
+          <button type="button" id="dpadRight" title="Cursor right">▶</button>
+          <button type="button" id="dpadDown" title="Newer history">▼</button>
+        </div>
+
+        <!-- function row 1 -->
+        <div class="pkeys">
+          <button type="button" class="pkey" data-label="x³" data-shiftlabel="∛" data-base="ins:^3" data-shift="fn:cbrt"></button>
+          <button type="button" class="pkey" data-label="x^y" data-shiftlabel="ʸ√x" data-base="ins:^" data-shift="fn:root"></button>
+          <button type="button" class="pkey" data-label="√" data-shiftlabel="x⁻¹" data-base="fn:sqrt" data-shift="ins:^(-1)"></button>
+          <button type="button" class="pkey" data-label="x²" data-shiftlabel="φ" data-base="ins:^2" data-shift="ins:phi"></button>
+          <button type="button" class="pkey" data-label="log" data-shiftlabel="10ˣ" data-base="fn:log" data-shift="ins:10^("></button>
+          <button type="button" class="pkey" data-label="ln" data-shiftlabel="eˣ" data-base="fn:ln" data-shift="fn:exp"></button>
+        </div>
+
+        <!-- function row 2: hyp + trig -->
+        <div class="pkeys">
+          <button type="button" class="pkey" id="hypKey" data-label="hyp" data-base="act:hyptoggle"></button>
+          <button type="button" class="pkey" id="sinKey" data-label="sin" data-shiftlabel="sin⁻¹" data-base="fn:sin" data-shift="fn:asin"></button>
+          <button type="button" class="pkey" id="cosKey" data-label="cos" data-shiftlabel="cos⁻¹" data-base="fn:cos" data-shift="fn:acos"></button>
+          <button type="button" class="pkey" id="tanKey" data-label="tan" data-shiftlabel="tan⁻¹" data-base="fn:tan" data-shift="fn:atan"></button>
+          <button type="button" class="pkey" data-label="(" data-base="ins:("></button>
+          <button type="button" class="pkey" data-label=")" data-base="ins:)"></button>
+        </div>
+
+        <!-- function row 3: memory / vars / notation -->
+        <div class="pkeys">
+          <button type="button" class="pkey" data-label="STO" data-shiftlabel="RCL" data-base="act:sto" data-shift="act:rcl"></button>
+          <button type="button" class="pkey" data-label="nCr" data-shiftlabel="nPr" data-base="fn:nCr" data-shift="fn:nPr"></button>
+          <button type="button" class="pkey" data-label="n!" data-shiftlabel="→Frac" data-base="fn:fact" data-shift="act:frac"></button>
+          <button type="button" class="pkey" data-label="ENG" data-base="act:cyclenotation"></button>
+          <button type="button" class="pkey" data-label="M+" data-shiftlabel="M−" data-base="act:mplus" data-shift="act:mminus"></button>
+          <button type="button" class="pkey" data-label="MR" data-shiftlabel="MC" data-base="act:mr" data-shift="act:mc"></button>
+        </div>
+
+        <!-- numeric rows -->
+        <div class="pkeys numpad">
+          <button type="button" class="pkey" data-label="7" data-alphalabel="A" data-base="ins:7" data-alpha="var:a"></button>
+          <button type="button" class="pkey" data-label="8" data-alphalabel="B" data-base="ins:8" data-alpha="var:b"></button>
+          <button type="button" class="pkey" data-label="9" data-alphalabel="C" data-base="ins:9" data-alpha="var:c"></button>
+          <button type="button" class="pkey clear" data-label="DEL" data-base="act:del"></button>
+          <button type="button" class="pkey clear" data-label="AC" data-base="act:ac"></button>
+        </div>
+        <div class="pkeys numpad">
+          <button type="button" class="pkey" data-label="4" data-alphalabel="X" data-base="ins:4" data-alpha="var:x"></button>
+          <button type="button" class="pkey" data-label="5" data-alphalabel="Y" data-base="ins:5" data-alpha="var:y"></button>
+          <button type="button" class="pkey" data-label="6" data-base="ins:6"></button>
+          <button type="button" class="pkey op" data-label="×" data-base="ins:*"></button>
+          <button type="button" class="pkey op" data-label="÷" data-base="ins:/"></button>
+        </div>
+        <div class="pkeys numpad">
+          <button type="button" class="pkey" data-label="1" data-base="ins:1"></button>
+          <button type="button" class="pkey" data-label="2" data-base="ins:2"></button>
+          <button type="button" class="pkey" data-label="3" data-base="ins:3"></button>
+          <button type="button" class="pkey op" data-label="+" data-base="ins:+"></button>
+          <button type="button" class="pkey op" data-label="−" data-base="ins:-"></button>
+        </div>
+        <div class="pkeys numpad">
+          <button type="button" class="pkey" data-label="0" data-shiftlabel="Rnd" data-base="ins:0" data-shift="act:round"></button>
+          <button type="button" class="pkey" data-label="." data-shiftlabel="Ran#" data-base="ins:." data-shift="act:ran"></button>
+          <button type="button" class="pkey" data-label="EXP" data-shiftlabel="π" data-base="ins:e" data-shift="ins:pi"></button>
+          <button type="button" class="pkey" data-label="(−)" data-shiftlabel="Ans" data-base="ins:-" data-shift="act:ans"></button>
+          <button type="button" class="pkey eq" data-label="=" data-shiftlabel="%" data-base="act:eq" data-shift="ins:%"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== STATISTICS TAB ===================== -->
+    <div class="tabpanel" id="tab-stats">
+      <div class="field-row">
+        <div style="width:100%;">
+          <label>Data set (comma, space, or newline separated)</label>
+          <textarea id="statsInput" placeholder="e.g. 2, 4, 4, 4, 5, 5, 7, 9"></textarea>
+        </div>
+      </div>
+      <button class="compute-btn" id="statsCompute">Compute statistics</button>
+      <div class="results" id="statsResults" style="display:none;"></div>
+
+      <div class="subhead">Combinatorics</div>
+      <div class="field-row">
+        <div>
+          <label>n</label>
+          <input type="number" id="combN" value="5">
+        </div>
+        <div>
+          <label>r</label>
+          <input type="number" id="combR" value="2">
+        </div>
+      </div>
+      <button class="compute-btn" id="combCompute">Compute nCr / nPr</button>
+      <div class="results" id="combResults" style="display:none;"></div>
+    </div>
+
+    <!-- ===================== MATRIX TAB ===================== -->
+    <div class="tabpanel" id="tab-matrix">
+      <div class="field-row">
+        <div>
+          <label>Size</label>
+          <select id="matSize">
+            <option value="2">2 × 2</option>
+            <option value="3">3 × 3</option>
+            <option value="4">4 × 4</option>
+          </select>
+        </div>
+        <div>
+          <label>Operation</label>
+          <select id="matOp">
+            <option value="add">A + B</option>
+            <option value="sub">A − B</option>
+            <option value="mul">A × B</option>
+            <option value="detA">det(A)</option>
+            <option value="detB">det(B)</option>
+            <option value="invA">inverse(A)</option>
+            <option value="invB">inverse(B)</option>
+            <option value="transA">transpose(A)</option>
+            <option value="transB">transpose(B)</option>
+          </select>
+        </div>
+      </div>
+      <div class="subhead">Matrix A</div>
+      <div class="matrix-grid" id="matGridA"></div>
+      <div class="subhead">Matrix B</div>
+      <div class="matrix-grid" id="matGridB"></div>
+      <button class="compute-btn" id="matCompute">Compute</button>
+      <div class="results" id="matResults" style="display:none;"></div>
+    </div>
+
+    <!-- ===================== COMPLEX TAB ===================== -->
+    <div class="tabpanel" id="tab-complex">
+      <div class="subhead">z1 = a + bi</div>
+      <div class="field-row">
+        <div><label>a (real)</label><input type="number" id="c1re" value="3"></div>
+        <div><label>b (imag)</label><input type="number" id="c1im" value="4"></div>
+      </div>
+      <div class="subhead">z2 = c + di</div>
+      <div class="field-row">
+        <div><label>c (real)</label><input type="number" id="c2re" value="1"></div>
+        <div><label>d (imag)</label><input type="number" id="c2im" value="-1"></div>
+      </div>
+      <div class="field-row">
+        <div style="width:100%;">
+          <label>Operation</label>
+          <select id="complexOp">
+            <option value="add">z1 + z2</option>
+            <option value="sub">z1 − z2</option>
+            <option value="mul">z1 × z2</option>
+            <option value="div">z1 ÷ z2</option>
+            <option value="mod1">|z1| (modulus)</option>
+            <option value="arg1">arg(z1)</option>
+            <option value="conj1">conjugate(z1)</option>
+            <option value="polar1">z1 in polar form</option>
+          </select>
+        </div>
+      </div>
+      <button class="compute-btn" id="complexCompute">Compute</button>
+      <div class="results" id="complexResults" style="display:none;"></div>
+    </div>
+
+    <!-- ===================== GRAPH TAB ===================== -->
+    <div class="tabpanel" id="tab-graph">
+      <div class="field-row">
+        <div style="width:100%;">
+          <label>f(x) =</label>
+          <input type="text" id="graphFn" value="sin(x)">
+        </div>
+      </div>
+      <div class="field-row">
+        <div><label>x min</label><input type="number" id="graphXMin" value="-10"></div>
+        <div><label>x max</label><input type="number" id="graphXMax" value="10"></div>
+      </div>
+      <div class="field-row" style="gap:6px;">
+        <button type="button" class="compute-btn" id="graphPlot" style="margin-top:0;">Plot</button>
+        <button type="button" class="compute-btn" id="graphZoomIn" style="margin-top:0;">Zoom +</button>
+        <button type="button" class="compute-btn" id="graphZoomOut" style="margin-top:0;">Zoom −</button>
+      </div>
+      <canvas id="graphCanvas" width="360" height="220" style="width:100%;background:var(--panel2);border-radius:10px;margin-top:8px;cursor:crosshair;"></canvas>
+      <div id="graphTraceReadout" style="font-size:12px;color:var(--muted);margin-top:6px;">Click the graph to trace X / Y</div>
+      <button type="button" class="compute-btn" id="graphSolve">G-Solve (find roots)</button>
+      <div class="results" id="graphResults" style="display:none;"></div>
+    </div>
+
+    <!-- ===================== BASE-N TAB ===================== -->
+    <div class="tabpanel" id="tab-basen">
+      <div class="field-row">
+        <div style="width:100%;">
+          <label>Value / expression — use spaces around AND/OR/XOR/NOT (e.g. 0xFF AND 0x0F). Supports 0x/0o/0b prefixes, + − * /, &lt;&lt; &gt;&gt;</label>
+          <input type="text" id="basenInput" value="255">
+        </div>
+      </div>
+      <button class="compute-btn" id="basenCompute">Convert / Evaluate</button>
+      <div class="results" id="basenResults" style="display:none;"></div>
+      <div class="subhead">Quick reference</div>
+      <div class="results" style="margin-top:0;">DEC → decimal&#10;HEX → 0x prefix (e.g. 0xFF)&#10;OCT → 0o prefix (e.g. 0o377)&#10;BIN → 0b prefix (e.g. 0b11111111)&#10;Bitwise: AND, OR, XOR, NOT, &lt;&lt;, &gt;&gt;</div>
+    </div>
   </div>
 
-  <div class="toolbar">
-    <button class="icon-btn" id="addCategoryBtn">+ New Category</button>
-  </div>
-
-  <div id="categoryTree"></div>
-
-  <div class="section-header">
-    <h2>Checklists</h2>
-    <button class="icon-btn" id="addChecklistBtn">+ New Checklist</button>
-  </div>
-  <div class="section-sub">For packing lists, document submissions, etc. — items stay checked or unchecked in place, nothing moves away.</div>
-
-  <div id="checklistTree"></div>
-</div>
-
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal-box">
-    <div class="modal-title" id="modalTitle"></div>
-    <div class="modal-body" id="modalBody"></div>
-    <div class="modal-footer" id="modalFooter"></div>
+  <div class="history-panel">
+    <h3>History
+      <span class="btns"><button id="exportHistory">Export CSV</button><button id="clearHistory">Clear</button></span>
+    </h3>
+    <ul id="historyList">
+      <li class="empty">No calculations yet</li>
+    </ul>
   </div>
 </div>
 
@@ -241,1511 +579,1115 @@
 <script>
 (function(){
   "use strict";
+  Decimal.set({ precision: 40 });
 
-  var STORAGE_KEY = "notesRemindersData_v1";
-
-  function uid(prefix){
-    return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8);
-  }
-
-  function defaultData(){
-    var names = ["Personal","Work","Job applications","Health"];
-    var cats = names.map(function(n){ return {id: uid("cat"), name: n, parentId: null}; });
-    return {categories: cats, items: [], checklists: [], checklistItems: [], collapsed: {}};
-  }
-
-  function loadData(){
-    var raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      try{
-        var parsed = JSON.parse(raw);
-        if(parsed && Array.isArray(parsed.categories) && Array.isArray(parsed.items)){
-          if(!parsed.collapsed) parsed.collapsed = {};
-          if(!Array.isArray(parsed.checklists)) parsed.checklists = [];
-          if(!Array.isArray(parsed.checklistItems)) parsed.checklistItems = [];
-          return parsed;
-        }
-      }catch(e){ console.error("Failed to parse saved data", e); }
-    }
-    return defaultData();
-  }
-
-  var data = loadData();
-  var saveDirHandle = null;
-  var autoSaveEnabled = false;
-
-  function persistLocal(){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }
-
-  function dataChanged(){
-    persistLocal();
-    if(autoSaveEnabled) writeAutoSaveFile();
-  }
-
-  // kept for any older call sites; treat as a full data change
-  function saveData(){ dataChanged(); }
-
-  function getChildren(parentId){
-    return data.categories.filter(function(c){ return c.parentId === parentId; });
-  }
-
-  function getDescendantCatIds(catId){
-    var ids = [catId];
-    getChildren(catId).forEach(function(c){
-      ids = ids.concat(getDescendantCatIds(c.id));
-    });
-    return ids;
-  }
-
-  function getItemsFor(catId, completed){
-    return data.items.filter(function(it){ return it.categoryId === catId && it.completed === completed; });
-  }
-
-  function formatDate(iso){
-    if(!iso) return "";
-    var d = new Date(iso);
-    var datePart = d.toLocaleDateString(undefined, {year:"numeric", month:"short", day:"numeric"});
-    var timePart = d.toLocaleTimeString(undefined, {hour:"2-digit", minute:"2-digit"});
-    return datePart + " " + timePart;
-  }
+  // ---------------------------------------------------------------
+  // Shared state
+  // ---------------------------------------------------------------
+  let history = []; // in-memory only — cleared when the tab/browser closes
+  let memoryValue = new Decimal(0);
+  // Named variables usable inside expressions (x is also the function variable for Graph tab)
+  let variables = { x: null, y: null, a: null, b: null, c: null, ans: new Decimal(0) };
+  const toast = document.getElementById('toast');
 
   function showToast(msg){
-    var t = document.getElementById("toast");
-    t.textContent = msg;
-    t.classList.add("show");
-    clearTimeout(t._timer);
-    t._timer = setTimeout(function(){ t.classList.remove("show"); }, 1800);
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 1500);
   }
 
-  // ---------- Modal ----------
-  var modalOverlay = document.getElementById("modalOverlay");
-  var modalTitle = document.getElementById("modalTitle");
-  var modalBody = document.getElementById("modalBody");
-  var modalFooter = document.getElementById("modalFooter");
-
-  function closeModal(){
-    modalOverlay.classList.remove("open");
-    modalBody.innerHTML = "";
-    modalFooter.innerHTML = "";
+  function addHistory(label, expr, result){
+    history.unshift({ label, expr, result, time: new Date() });
+    if (history.length > 300) history.pop();
+    renderHistory();
   }
 
-  function openFormModal(opts){
-    // opts: {title, fields:[{id,label,type:'text'|'select',options,placeholder,value}], confirmLabel, onConfirm(values), danger}
-    modalTitle.textContent = opts.title;
-    modalBody.innerHTML = "";
-    var inputs = {};
-    (opts.fields || []).forEach(function(f){
-      if(f.label){
-        var lbl = document.createElement("div");
-        lbl.style.fontSize = "12.5px";
-        lbl.style.color = "var(--muted)";
-        lbl.style.marginBottom = "4px";
-        lbl.textContent = f.label;
-        modalBody.appendChild(lbl);
-      }
-      var el;
-      if(f.type === "select"){
-        el = document.createElement("select");
-        (f.options || []).forEach(function(o){
-          var opt = document.createElement("option");
-          opt.value = o.value;
-          opt.textContent = o.text;
-          el.appendChild(opt);
-        });
-      } else if(f.type === "date"){
-        el = document.createElement("input");
-        el.type = "date";
-        if(f.value) el.value = f.value;
-      } else {
-        el = document.createElement("input");
-        el.type = "text";
-        el.placeholder = f.placeholder || "";
-        if(f.value) el.value = f.value;
-      }
-      el.id = "modal_field_" + f.id;
-      modalBody.appendChild(el);
-      inputs[f.id] = el;
-    });
-
-    modalFooter.innerHTML = "";
-    var cancelBtn = document.createElement("button");
-    cancelBtn.className = "btn-cancel";
-    cancelBtn.textContent = "Cancel";
-    cancelBtn.onclick = closeModal;
-    var confirmBtn = document.createElement("button");
-    confirmBtn.className = opts.danger ? "btn-danger" : "btn-confirm";
-    confirmBtn.textContent = opts.confirmLabel || "Save";
-    confirmBtn.onclick = function(){
-      var values = {};
-      Object.keys(inputs).forEach(function(k){ values[k] = inputs[k].value; });
-      opts.onConfirm(values);
-    };
-    modalFooter.appendChild(cancelBtn);
-    modalFooter.appendChild(confirmBtn);
-    modalOverlay.classList.add("open");
-    var firstInput = modalBody.querySelector("input,select");
-    if(firstInput) setTimeout(function(){ firstInput.focus(); }, 50);
-  }
-
-  function openConfirmModal(opts){
-    // opts: {title, message, confirmLabel, danger, onConfirm}
-    modalTitle.textContent = opts.title;
-    modalBody.innerHTML = "";
-    var msg = document.createElement("div");
-    msg.className = "modal-msg";
-    msg.textContent = opts.message;
-    modalBody.appendChild(msg);
-
-    modalFooter.innerHTML = "";
-    var cancelBtn = document.createElement("button");
-    cancelBtn.className = "btn-cancel";
-    cancelBtn.textContent = "Cancel";
-    cancelBtn.onclick = closeModal;
-    var confirmBtn = document.createElement("button");
-    confirmBtn.className = opts.danger ? "btn-danger" : "btn-confirm";
-    confirmBtn.textContent = opts.confirmLabel || "OK";
-    confirmBtn.onclick = function(){ opts.onConfirm(); };
-    modalFooter.appendChild(cancelBtn);
-    modalFooter.appendChild(confirmBtn);
-    modalOverlay.classList.add("open");
-  }
-
-  modalOverlay.addEventListener("click", function(e){
-    if(e.target === modalOverlay) closeModal();
-  });
-
-  // ---------- Category select options (flat w/ indent) ----------
-  function fillCategorySelect(selectEl, excludeIds){
-    excludeIds = excludeIds || [];
-    selectEl.innerHTML = "";
-    function walk(parentId, depth){
-      getChildren(parentId).forEach(function(c){
-        if(excludeIds.indexOf(c.id) !== -1) return;
-        var opt = document.createElement("option");
-        opt.value = c.id;
-        var prefix = depth > 0 ? " ".repeat(depth) + "↳ " : "";
-        opt.textContent = prefix + c.name;
-        selectEl.appendChild(opt);
-        walk(c.id, depth + 1);
-      });
-    }
-    walk(null, 0);
-  }
-
-  // ---------- Actions ----------
-  function addItem(text, categoryId, note, deadline){
-    text = (text || "").trim();
-    if(!text || !categoryId) return;
-    data.items.push({
-      id: uid("item"),
-      text: text,
-      note: (note || "").trim(),
-      deadline: deadline || null,
-      categoryId: categoryId,
-      createdAt: new Date().toISOString(),
-      completed: false,
-      completedAt: null
-    });
-    dataChanged();
-    render();
-  }
-
-  function daysUntilDeadline(deadline){
-    if(!deadline) return null;
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
-    var d = new Date(deadline + "T00:00:00");
-    return Math.round((d - today) / 86400000);
-  }
-
-  function deadlineLabel(diff){
-    if(diff < 0) return "Overdue by " + Math.abs(diff) + " day" + (Math.abs(diff) === 1 ? "" : "s");
-    if(diff === 0) return "Due today";
-    if(diff === 1) return "Due tomorrow";
-    return "Due in " + diff + " days";
-  }
-
-  function deadlineUrgencyClass(diff){
-    if(diff < 0) return "due-overdue";
-    if(diff <= 5) return "due-soon";
-    return "due-later";
-  }
-
-  function editItem(itemId, text, note, deadline){
-    var it = data.items.find(function(i){ return i.id === itemId; });
-    if(!it) return;
-    text = (text || "").trim();
-    if(!text) return;
-    it.text = text;
-    it.note = (note || "").trim();
-    it.deadline = deadline || null;
-    dataChanged();
-    render();
-  }
-
-  function toggleComplete(itemId, completed){
-    var it = data.items.find(function(i){ return i.id === itemId; });
-    if(!it) return;
-    it.completed = completed;
-    it.completedAt = completed ? new Date().toISOString() : null;
-    dataChanged();
-    render();
-  }
-
-  function deleteItem(itemId){
-    data.items = data.items.filter(function(i){ return i.id !== itemId; });
-    dataChanged();
-    render();
-  }
-
-  function addCategory(name, parentId){
-    name = (name || "").trim();
-    if(!name) return;
-    data.categories.push({id: uid("cat"), name: name, parentId: parentId || null});
-    dataChanged();
-    render();
-  }
-
-  function renameCategory(catId, newName){
-    newName = (newName || "").trim();
-    if(!newName) return;
-    var c = data.categories.find(function(c){ return c.id === catId; });
-    if(c){ c.name = newName; dataChanged(); render(); }
-  }
-
-  function deleteCategory(catId){
-    var idsToDelete = getDescendantCatIds(catId);
-    data.categories = data.categories.filter(function(c){ return idsToDelete.indexOf(c.id) === -1; });
-    data.items = data.items.filter(function(i){ return idsToDelete.indexOf(i.categoryId) === -1; });
-    dataChanged();
-    render();
-  }
-
-  function toggleCollapsed(key){
-    data.collapsed[key] = !data.collapsed[key];
-    persistLocal();
-    render();
-  }
-
-  // ---------- Checklists (items stay in place, checked or not — no completed list) ----------
-  function addChecklist(name){
-    name = (name || "").trim();
-    if(!name) return;
-    data.checklists.push({id: uid("chk"), name: name});
-    dataChanged();
-    render();
-  }
-
-  function renameChecklist(checklistId, newName){
-    newName = (newName || "").trim();
-    if(!newName) return;
-    var c = data.checklists.find(function(c){ return c.id === checklistId; });
-    if(c){ c.name = newName; dataChanged(); render(); }
-  }
-
-  function deleteChecklist(checklistId){
-    data.checklists = data.checklists.filter(function(c){ return c.id !== checklistId; });
-    data.checklistItems = data.checklistItems.filter(function(i){ return i.checklistId !== checklistId; });
-    dataChanged();
-    render();
-  }
-
-  function resetChecklist(checklistId){
-    data.checklistItems.forEach(function(i){
-      if(i.checklistId === checklistId) i.checked = false;
-    });
-    dataChanged();
-    render();
-  }
-
-  function addChecklistItem(checklistId, text){
-    text = (text || "").trim();
-    if(!text || !checklistId) return;
-    data.checklistItems.push({id: uid("citem"), checklistId: checklistId, text: text, checked: false});
-    dataChanged();
-    render();
-  }
-
-  function toggleChecklistItem(itemId, checked){
-    var it = data.checklistItems.find(function(i){ return i.id === itemId; });
-    if(!it) return;
-    it.checked = checked;
-    dataChanged();
-    render();
-  }
-
-  function deleteChecklistItem(itemId){
-    data.checklistItems = data.checklistItems.filter(function(i){ return i.id !== itemId; });
-    dataChanged();
-    render();
-  }
-
-  // ---------- Rendering ----------
-  function renderItemLi(item, isCompleted){
-    var li = document.createElement("li");
-    if(isCompleted) li.className = "completed";
-
-    var chk = document.createElement("input");
-    chk.type = "checkbox";
-    chk.className = "chk";
-    chk.checked = !!item.completed;
-    chk.addEventListener("change", function(){
-      toggleComplete(item.id, chk.checked);
-    });
-
-    var main = document.createElement("div");
-    main.className = "item-main";
-    var txt = document.createElement("div");
-    txt.className = "item-text";
-    txt.textContent = item.text;
-    main.appendChild(txt);
-
-    if(item.note){
-      var noteEl = document.createElement("div");
-      noteEl.className = "item-note";
-      noteEl.textContent = item.note;
-      main.appendChild(noteEl);
-    }
-
-    if(item.deadline && !isCompleted){
-      var diff = daysUntilDeadline(item.deadline);
-      var dl = document.createElement("div");
-      dl.className = "item-deadline " + deadlineUrgencyClass(diff);
-      dl.textContent = "📅 " + deadlineLabel(diff) + " (" + item.deadline + ")";
-      main.appendChild(dl);
-    } else if(item.deadline && isCompleted){
-      var dl2 = document.createElement("div");
-      dl2.className = "item-deadline due-later";
-      dl2.textContent = "📅 Was due " + item.deadline;
-      main.appendChild(dl2);
-    }
-
-    var meta = document.createElement("div");
-    meta.className = "item-meta";
-    if(isCompleted){
-      meta.textContent = "Created " + formatDate(item.createdAt) + " · Completed " + formatDate(item.completedAt);
-    } else {
-      meta.textContent = "Created " + formatDate(item.createdAt);
-    }
-    main.appendChild(meta);
-
-    var editBtn = document.createElement("button");
-    editBtn.className = "item-edit";
-    editBtn.textContent = "✎";
-    editBtn.title = "Edit";
-    editBtn.addEventListener("click", function(){
-      openFormModal({
-        title: "Edit reminder",
-        fields: [
-          {id:"text", label:"Reminder / note", value: item.text},
-          {id:"note", label:"Extra note (optional)", value: item.note || "", placeholder:"Any extra detail"},
-          {id:"deadline", label:"Deadline (optional)", type:"date", value: item.deadline || ""}
-        ],
-        confirmLabel: "Save",
-        onConfirm: function(v){
-          if(!v.text || !v.text.trim()) return;
-          editItem(item.id, v.text, v.note, v.deadline || null);
-          closeModal();
-        }
-      });
-    });
-
-    var del = document.createElement("button");
-    del.className = "item-del";
-    del.textContent = "×";
-    del.title = "Delete";
-    del.addEventListener("click", function(){
-      openConfirmModal({
-        title: "Delete item?",
-        message: 'Delete "' + item.text + '" permanently? This cannot be undone.',
-        confirmLabel: "Delete",
-        danger: true,
-        onConfirm: function(){ deleteItem(item.id); closeModal(); }
-      });
-    });
-
-    li.appendChild(chk);
-    li.appendChild(main);
-    li.appendChild(editBtn);
-    li.appendChild(del);
-    return li;
-  }
-
-  function renderDeadlineBanner(){
-    var container = document.getElementById("deadlineBanner");
-    container.innerHTML = "";
-    var upcoming = data.items
-      .filter(function(it){ return !it.completed && it.deadline; })
-      .map(function(it){ return {item: it, diff: daysUntilDeadline(it.deadline)}; })
-      .filter(function(x){ return x.diff <= 5; })
-      .sort(function(a, b){ return a.diff - b.diff; });
-
-    if(!upcoming.length) return;
-
-    var box = document.createElement("div");
-    box.className = "banner";
-    var title = document.createElement("div");
-    title.className = "banner-title";
-    title.textContent = "⏰ Upcoming & overdue (within 5 days)";
-    box.appendChild(title);
-
-    upcoming.forEach(function(x){
-      var row = document.createElement("div");
-      row.className = "banner-row";
-      var left = document.createElement("div");
-      var what = document.createElement("div");
-      what.className = "b-what";
-      what.textContent = x.item.text;
-      var cat = document.createElement("div");
-      cat.className = "b-cat";
-      cat.textContent = getCategoryPath(x.item.categoryId);
-      left.appendChild(what);
-      left.appendChild(cat);
-
-      var due = document.createElement("div");
-      due.className = "b-due " + deadlineUrgencyClass(x.diff);
-      due.textContent = deadlineLabel(x.diff);
-
-      row.appendChild(left);
-      row.appendChild(due);
-      box.appendChild(row);
-    });
-
-    container.appendChild(box);
-  }
-
-  function renderCategoryNode(cat, depth){
-    var wrap = document.createElement("div");
-    wrap.className = "category depth-" + Math.min(depth, 3);
-
-    var collapsedKey = "cat_" + cat.id;
-    var isCollapsed = !!data.collapsed[collapsedKey];
-
-    var header = document.createElement("div");
-    header.className = "cat-header";
-
-    var toggleBtn = document.createElement("button");
-    toggleBtn.className = "cat-toggle";
-    toggleBtn.textContent = isCollapsed ? "▶" : "▼";
-    toggleBtn.addEventListener("click", function(){ toggleCollapsed(collapsedKey); });
-
-    var nameSpan = document.createElement("div");
-    nameSpan.className = "cat-name";
-    nameSpan.textContent = cat.name;
-
-    var activeCount = getItemsFor(cat.id, false).length;
-    var countSpan = document.createElement("span");
-    countSpan.className = "cat-count";
-    countSpan.textContent = activeCount;
-
-    var actions = document.createElement("div");
-    actions.className = "cat-actions";
-
-    var addItemBtn = document.createElement("button");
-    addItemBtn.className = "mini-btn";
-    addItemBtn.title = "Add reminder here";
-    addItemBtn.textContent = "➕";
-    addItemBtn.addEventListener("click", function(e){
-      e.stopPropagation();
-      openFormModal({
-        title: "Add to " + cat.name,
-        fields: [
-          {id:"text", label:"Reminder / note", placeholder:"What do you need to remember?"},
-          {id:"note", label:"Extra note (optional)", placeholder:"Any extra detail"},
-          {id:"deadline", label:"Deadline (optional)", type:"date"}
-        ],
-        confirmLabel: "Add",
-        onConfirm: function(v){
-          if(!v.text || !v.text.trim()) return;
-          addItem(v.text, cat.id, v.note, v.deadline || null);
-          closeModal();
-        }
-      });
-    });
-
-    var addSubBtn = document.createElement("button");
-    addSubBtn.className = "mini-btn";
-    addSubBtn.title = "Add subcategory";
-    addSubBtn.textContent = "📁+";
-    addSubBtn.addEventListener("click", function(e){
-      e.stopPropagation();
-      openFormModal({
-        title: "New subcategory in " + cat.name,
-        fields: [{id:"name", label:"Subcategory name", placeholder:"e.g. Interviews"}],
-        confirmLabel: "Create",
-        onConfirm: function(v){
-          if(!v.name || !v.name.trim()) return;
-          addCategory(v.name, cat.id);
-          closeModal();
-        }
-      });
-    });
-
-    var renameBtn = document.createElement("button");
-    renameBtn.className = "mini-btn";
-    renameBtn.title = "Rename";
-    renameBtn.textContent = "✎";
-    renameBtn.addEventListener("click", function(e){
-      e.stopPropagation();
-      openFormModal({
-        title: "Rename category",
-        fields: [{id:"name", label:"Name", value: cat.name}],
-        confirmLabel: "Save",
-        onConfirm: function(v){
-          if(!v.name || !v.name.trim()) return;
-          renameCategory(cat.id, v.name);
-          closeModal();
-        }
-      });
-    });
-
-    var delBtn = document.createElement("button");
-    delBtn.className = "mini-btn";
-    delBtn.title = "Delete category";
-    delBtn.textContent = "🗑";
-    delBtn.addEventListener("click", function(e){
-      e.stopPropagation();
-      var childCount = getDescendantCatIds(cat.id).length - 1;
-      var warn = childCount > 0
-        ? ' This will also delete ' + childCount + ' subcategory(ies) and all their items.'
-        : ' All its reminders (active and completed) will be deleted.';
-      openConfirmModal({
-        title: 'Delete "' + cat.name + '"?',
-        message: "This cannot be undone." + warn,
-        confirmLabel: "Delete",
-        danger: true,
-        onConfirm: function(){ deleteCategory(cat.id); closeModal(); }
-      });
-    });
-
-    actions.appendChild(addItemBtn);
-    actions.appendChild(addSubBtn);
-    actions.appendChild(renameBtn);
-    actions.appendChild(delBtn);
-
-    header.appendChild(toggleBtn);
-    header.appendChild(nameSpan);
-    header.appendChild(countSpan);
-    header.appendChild(actions);
-    header.addEventListener("click", function(){ toggleCollapsed(collapsedKey); });
-    // prevent header click firing twice from toggle button (already stops via bubbling naturally fine)
-
-    wrap.appendChild(header);
-
-    if(!isCollapsed){
-      var body = document.createElement("div");
-      body.className = "cat-body";
-
-      var activeItems = getItemsFor(cat.id, false);
-      if(activeItems.length){
-        var ul = document.createElement("ul");
-        ul.className = "item-list";
-        activeItems.forEach(function(it){ ul.appendChild(renderItemLi(it, false)); });
-        body.appendChild(ul);
-      } else {
-        var hint = document.createElement("div");
-        hint.className = "empty-hint";
-        hint.textContent = "Nothing here yet.";
-        body.appendChild(hint);
-      }
-
-      // children subcategories
-      var children = getChildren(cat.id);
-      if(children.length){
-        var childWrap = document.createElement("div");
-        childWrap.className = "cat-children";
-        children.forEach(function(child){
-          childWrap.appendChild(renderCategoryNode(child, depth + 1));
-        });
-        body.appendChild(childWrap);
-      }
-
-      // completed section (items directly in this category only)
-      var completedItems = getItemsFor(cat.id, true);
-      var completedKey = "completed_" + cat.id;
-      var completedOpen = !!data.collapsed[completedKey];
-      var compToggle = document.createElement("button");
-      compToggle.className = "completed-toggle";
-      compToggle.textContent = (completedOpen ? "▼ " : "▶ ") + "Completed (" + completedItems.length + ")";
-      compToggle.addEventListener("click", function(e){
-        e.stopPropagation();
-        toggleCollapsed(completedKey);
-      });
-      body.appendChild(compToggle);
-
-      if(completedOpen){
-        var compBody = document.createElement("div");
-        compBody.className = "completed-body";
-        if(completedItems.length){
-          var cul = document.createElement("ul");
-          cul.className = "item-list";
-          completedItems
-            .slice()
-            .sort(function(a,b){ return new Date(b.completedAt) - new Date(a.completedAt); })
-            .forEach(function(it){ cul.appendChild(renderItemLi(it, true)); });
-          compBody.appendChild(cul);
-        } else {
-          var chint = document.createElement("div");
-          chint.className = "empty-hint";
-          chint.textContent = "No completed items yet.";
-          compBody.appendChild(chint);
-        }
-        body.appendChild(compBody);
-      }
-
-      wrap.appendChild(body);
-    }
-
-    return wrap;
-  }
-
-  function renderChecklistItemLi(item){
-    var li = document.createElement("li");
-    if(item.checked) li.className = "checked";
-
-    var chk = document.createElement("input");
-    chk.type = "checkbox";
-    chk.className = "chk";
-    chk.checked = !!item.checked;
-    chk.addEventListener("change", function(){
-      toggleChecklistItem(item.id, chk.checked);
-    });
-
-    var main = document.createElement("div");
-    main.className = "item-main";
-    var txt = document.createElement("div");
-    txt.className = "item-text";
-    txt.textContent = item.text;
-    main.appendChild(txt);
-
-    var del = document.createElement("button");
-    del.className = "item-del";
-    del.textContent = "×";
-    del.title = "Remove";
-    del.addEventListener("click", function(){
-      openConfirmModal({
-        title: "Remove item?",
-        message: 'Remove "' + item.text + '" from this checklist? This cannot be undone.',
-        confirmLabel: "Remove",
-        danger: true,
-        onConfirm: function(){ deleteChecklistItem(item.id); closeModal(); }
-      });
-    });
-
-    li.appendChild(chk);
-    li.appendChild(main);
-    li.appendChild(del);
-    return li;
-  }
-
-  function renderChecklistNode(checklist){
-    var wrap = document.createElement("div");
-    wrap.className = "category checklist";
-
-    var collapsedKey = "chk_" + checklist.id;
-    var isCollapsed = !!data.collapsed[collapsedKey];
-    var items = data.checklistItems.filter(function(i){ return i.checklistId === checklist.id; });
-    var checkedCount = items.filter(function(i){ return i.checked; }).length;
-
-    var header = document.createElement("div");
-    header.className = "cat-header";
-
-    var toggleBtn = document.createElement("button");
-    toggleBtn.className = "cat-toggle";
-    toggleBtn.textContent = isCollapsed ? "▶" : "▼";
-    toggleBtn.addEventListener("click", function(){ toggleCollapsed(collapsedKey); });
-
-    var nameSpan = document.createElement("div");
-    nameSpan.className = "cat-name";
-    nameSpan.textContent = checklist.name;
-
-    var countSpan = document.createElement("span");
-    countSpan.className = "cat-count";
-    countSpan.textContent = checkedCount + " / " + items.length;
-
-    var actions = document.createElement("div");
-    actions.className = "cat-actions";
-
-    var addItemBtn = document.createElement("button");
-    addItemBtn.className = "mini-btn";
-    addItemBtn.title = "Add item";
-    addItemBtn.textContent = "➕";
-    addItemBtn.addEventListener("click", function(e){
-      e.stopPropagation();
-      openFormModal({
-        title: "Add to " + checklist.name,
-        fields: [{id:"text", label:"Item", placeholder:"e.g. Passport"}],
-        confirmLabel: "Add",
-        onConfirm: function(v){
-          if(!v.text || !v.text.trim()) return;
-          addChecklistItem(checklist.id, v.text);
-          closeModal();
-        }
-      });
-    });
-
-    var resetBtn = document.createElement("button");
-    resetBtn.className = "mini-btn";
-    resetBtn.title = "Uncheck all (reuse this checklist)";
-    resetBtn.textContent = "↺";
-    resetBtn.addEventListener("click", function(e){
-      e.stopPropagation();
-      openConfirmModal({
-        title: "Reset checklist?",
-        message: 'Uncheck all items in "' + checklist.name + '"? Items themselves won\'t be removed.',
-        confirmLabel: "Reset",
-        onConfirm: function(){ resetChecklist(checklist.id); closeModal(); }
-      });
-    });
-
-    var renameBtn = document.createElement("button");
-    renameBtn.className = "mini-btn";
-    renameBtn.title = "Rename";
-    renameBtn.textContent = "✎";
-    renameBtn.addEventListener("click", function(e){
-      e.stopPropagation();
-      openFormModal({
-        title: "Rename checklist",
-        fields: [{id:"name", label:"Name", value: checklist.name}],
-        confirmLabel: "Save",
-        onConfirm: function(v){
-          if(!v.name || !v.name.trim()) return;
-          renameChecklist(checklist.id, v.name);
-          closeModal();
-        }
-      });
-    });
-
-    var delBtn = document.createElement("button");
-    delBtn.className = "mini-btn";
-    delBtn.title = "Delete checklist";
-    delBtn.textContent = "🗑";
-    delBtn.addEventListener("click", function(e){
-      e.stopPropagation();
-      openConfirmModal({
-        title: 'Delete "' + checklist.name + '"?',
-        message: "This cannot be undone. All " + items.length + " item(s) in this checklist will be deleted.",
-        confirmLabel: "Delete",
-        danger: true,
-        onConfirm: function(){ deleteChecklist(checklist.id); closeModal(); }
-      });
-    });
-
-    actions.appendChild(addItemBtn);
-    actions.appendChild(resetBtn);
-    actions.appendChild(renameBtn);
-    actions.appendChild(delBtn);
-
-    header.appendChild(toggleBtn);
-    header.appendChild(nameSpan);
-    header.appendChild(countSpan);
-    header.appendChild(actions);
-    header.addEventListener("click", function(){ toggleCollapsed(collapsedKey); });
-
-    wrap.appendChild(header);
-
-    if(!isCollapsed){
-      var body = document.createElement("div");
-      body.className = "cat-body";
-      if(items.length){
-        var ul = document.createElement("ul");
-        ul.className = "item-list";
-        items.forEach(function(it){ ul.appendChild(renderChecklistItemLi(it)); });
-        body.appendChild(ul);
-      } else {
-        var hint = document.createElement("div");
-        hint.className = "empty-hint";
-        hint.textContent = "No items yet — tap ➕ to add some.";
-        body.appendChild(hint);
-      }
-      wrap.appendChild(body);
-    }
-
-    return wrap;
-  }
-
-  function render(){
-    renderDeadlineBanner();
-    var tree = document.getElementById("categoryTree");
-    tree.innerHTML = "";
-    getChildren(null).forEach(function(cat){
-      tree.appendChild(renderCategoryNode(cat, 0));
-    });
-    fillCategorySelect(document.getElementById("itemCategory"));
-
-    var checklistTree = document.getElementById("checklistTree");
-    checklistTree.innerHTML = "";
-    data.checklists.forEach(function(cl){
-      checklistTree.appendChild(renderChecklistNode(cl));
-    });
-    if(!data.checklists.length){
-      var hint = document.createElement("div");
-      hint.className = "empty-hint";
-      hint.textContent = "No checklists yet — tap “+ New Checklist” for things like packing lists or document submissions.";
-      checklistTree.appendChild(hint);
-    }
-  }
-
-  // ---------- Top-level form handlers ----------
-  document.getElementById("addForm").addEventListener("submit", function(e){
-    e.preventDefault();
-    var textEl = document.getElementById("itemText");
-    var catEl = document.getElementById("itemCategory");
-    var noteEl = document.getElementById("itemNote");
-    var deadlineEl = document.getElementById("itemDeadline");
-    if(!catEl.value){
-      showToast("Create a category first");
+  function renderHistory(){
+    const historyList = document.getElementById('historyList');
+    historyList.innerHTML = '';
+    if (history.length === 0) {
+      historyList.innerHTML = '<li class="empty">No calculations yet</li>';
       return;
     }
-    addItem(textEl.value, catEl.value, noteEl.value, deadlineEl.value || null);
-    textEl.value = "";
-    noteEl.value = "";
-    deadlineEl.value = "";
-    textEl.focus();
-  });
-
-  document.getElementById("toggleDetailsBtn").addEventListener("click", function(){
-    var row = document.getElementById("detailsRow");
-    var open = row.style.display !== "none";
-    row.style.display = open ? "none" : "flex";
-    this.textContent = open ? "+ Add note / deadline" : "− Hide note / deadline";
-  });
-
-  document.getElementById("addCategoryBtn").addEventListener("click", function(){
-    openFormModal({
-      title: "New category",
-      fields: [{id:"name", label:"Category name", placeholder:"e.g. Travel"}],
-      confirmLabel: "Create",
-      onConfirm: function(v){
-        if(!v.name || !v.name.trim()) return;
-        addCategory(v.name, null);
-        closeModal();
-      }
+    history.forEach(item => {
+      const li = document.createElement('li');
+      const tag = item.label ? `<span style="color:var(--accent2);">[${item.label}]</span> ` : '';
+      li.innerHTML = `<div class="expr">${tag}${item.expr} =</div><div class="res">${item.result}</div>`;
+      li.addEventListener('click', () => {
+        if (item.label === 'sci' || !item.label) {
+          display.value = item.result;
+          expressionEl.textContent = '';
+          justEvaluated = true;
+          display.focus();
+        }
+      });
+      historyList.appendChild(li);
     });
-  });
-
-  document.getElementById("addChecklistBtn").addEventListener("click", function(){
-    openFormModal({
-      title: "New checklist",
-      fields: [{id:"name", label:"Checklist name", placeholder:"e.g. Japan Trip Packing"}],
-      confirmLabel: "Create",
-      onConfirm: function(v){
-        if(!v.name || !v.name.trim()) return;
-        addChecklist(v.name);
-        closeModal();
-      }
-    });
-  });
-
-  // ---------- Export / Import ----------
-  function buildExportPayload(){
-    return {
-      exportedAt: new Date().toISOString(),
-      categories: data.categories,
-      items: data.items,
-      checklists: data.checklists,
-      checklistItems: data.checklistItems
-    };
   }
 
-  document.getElementById("exportBtn").addEventListener("click", function(){
-    var payload = buildExportPayload();
-    var blob = new Blob([JSON.stringify(payload, null, 2)], {type: "application/json"});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    var stamp = new Date().toISOString().slice(0,10);
+  document.getElementById('clearHistory').addEventListener('click', () => {
+    history = [];
+    renderHistory();
+    showToast('History cleared');
+  });
+
+  document.getElementById('exportHistory').addEventListener('click', () => {
+    if (history.length === 0) { showToast('No history to export'); return; }
+    let csv = 'Type,Expression,Result,Time\n';
+    history.forEach(item => {
+      const esc = (s) => `"${String(s).replace(/"/g,'""')}"`;
+      csv += [esc(item.label||'sci'), esc(item.expr), esc(item.result), esc(item.time.toISOString())].join(',') + '\n';
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
     a.href = url;
-    a.download = "notes-backup-" + stamp + ".json";
+    a.download = 'calculator-history.csv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
-    showToast("Exported");
+    URL.revokeObjectURL(url);
+    showToast('History exported');
   });
 
-  document.getElementById("importBtn").addEventListener("click", function(){
-    document.getElementById("importInput").click();
+  // ---------------------------------------------------------------
+  // Tabs
+  // ---------------------------------------------------------------
+  document.querySelectorAll('.tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
   });
 
-  document.getElementById("importInput").addEventListener("change", function(e){
-    var file = e.target.files[0];
-    if(!file) return;
-    var reader = new FileReader();
-    reader.onload = function(){
-      try{
-        var parsed = JSON.parse(reader.result);
-        if(!parsed || !Array.isArray(parsed.categories) || !Array.isArray(parsed.items)){
-          showToast("Invalid backup file");
-          return;
-        }
-        openConfirmModal({
-          title: "Import backup?",
-          message: "This will replace all current categories and items (" + data.categories.length + " categories, " + data.items.length + " items) with the contents of this file (" + parsed.categories.length + " categories, " + parsed.items.length + " items). This cannot be undone.",
-          confirmLabel: "Replace",
-          danger: true,
-          onConfirm: function(){
-            data = {
-              categories: parsed.categories,
-              items: parsed.items,
-              checklists: Array.isArray(parsed.checklists) ? parsed.checklists : [],
-              checklistItems: Array.isArray(parsed.checklistItems) ? parsed.checklistItems : [],
-              collapsed: {}
-            };
-            dataChanged();
-            render();
-            closeModal();
-            showToast("Imported");
-          }
-        });
-      }catch(err){
-        showToast("Could not read file");
-      }
-      e.target.value = "";
+  // ---------------------------------------------------------------
+  // Scientific expression parser (arbitrary precision via decimal.js)
+  // ---------------------------------------------------------------
+  function makeEvaluator(opts){
+    const degMode = !!(opts && opts.deg);
+    const D = (x) => new Decimal(x);
+    const PI = Decimal.acos(-1);
+    const toRad = (x) => degMode ? x.mul(PI).div(180) : x;
+    const toDeg = (x) => degMode ? x.mul(180).div(PI) : x;
+
+    function factorial(n){
+      if (!n.isInt() || n.isNegative()) throw new Error('n! requires a non-negative integer');
+      let r = D(1), i = D(2);
+      while (i.lte(n)) { r = r.mul(i); i = i.plus(1); }
+      return r;
+    }
+    function nCr(n, r){
+      if (!n.isInt() || !r.isInt() || n.isNegative() || r.isNegative() || r.gt(n)) throw new Error('nCr requires 0 <= r <= n');
+      return factorial(n).div(factorial(r).mul(factorial(n.minus(r))));
+    }
+    function nPr(n, r){
+      if (!n.isInt() || !r.isInt() || n.isNegative() || r.isNegative() || r.gt(n)) throw new Error('nPr requires 0 <= r <= n');
+      return factorial(n).div(factorial(n.minus(r)));
+    }
+
+    const FN1 = {
+      sin: (x) => Decimal.sin(toRad(x)),
+      cos: (x) => Decimal.cos(toRad(x)),
+      tan: (x) => Decimal.tan(toRad(x)),
+      asin: (x) => toDeg(Decimal.asin(x)),
+      acos: (x) => toDeg(Decimal.acos(x)),
+      atan: (x) => toDeg(Decimal.atan(x)),
+      sinh: (x) => Decimal.sinh(x),
+      cosh: (x) => Decimal.cosh(x),
+      tanh: (x) => Decimal.tanh(x),
+      asinh: (x) => Decimal.asinh(x),
+      acosh: (x) => Decimal.acosh(x),
+      atanh: (x) => Decimal.atanh(x),
+      log: (x) => Decimal.log10(x),
+      ln: (x) => Decimal.ln(x),
+      sqrt: (x) => Decimal.sqrt(x),
+      cbrt: (x) => Decimal.cbrt(x),
+      exp: (x) => Decimal.exp(x),
+      abs: (x) => x.abs(),
+      fact: (x) => factorial(x)
     };
-    reader.readAsText(file);
-  });
+    const FN2 = { nCr, nPr, root: (x,n) => x.pow(D(1).div(n)) };
+    const CONST = { pi: PI, e: Decimal.exp(1), phi: D(1).plus(Decimal.sqrt(5)).div(2) };
+    const vars = (opts && opts.variables) || variables;
 
-  // ---------- Local folder auto-save (JSON + CSV) ----------
-  var IDB_NAME = "notesRemindersHandles";
-  var IDB_STORE = "handles";
-
-  function idbOpen(){
-    return new Promise(function(resolve, reject){
-      var req = indexedDB.open(IDB_NAME, 1);
-      req.onupgradeneeded = function(){ req.result.createObjectStore(IDB_STORE); };
-      req.onsuccess = function(){ resolve(req.result); };
-      req.onerror = function(){ reject(req.error); };
-    });
-  }
-  function idbSet(key, value){
-    return idbOpen().then(function(db){
-      return new Promise(function(resolve, reject){
-        var tx = db.transaction(IDB_STORE, "readwrite");
-        tx.objectStore(IDB_STORE).put(value, key);
-        tx.oncomplete = function(){ resolve(); };
-        tx.onerror = function(){ reject(tx.error); };
-      });
-    });
-  }
-  function idbGet(key){
-    return idbOpen().then(function(db){
-      return new Promise(function(resolve, reject){
-        var tx = db.transaction(IDB_STORE, "readonly");
-        var req = tx.objectStore(IDB_STORE).get(key);
-        req.onsuccess = function(){ resolve(req.result); };
-        req.onerror = function(){ reject(req.error); };
-      });
-    });
-  }
-
-  function csvEscape(val){
-    val = val === null || val === undefined ? "" : String(val);
-    if(/[",\n]/.test(val)){
-      val = '"' + val.replace(/"/g, '""') + '"';
-    }
-    return val;
-  }
-
-  function getCategoryPath(catId){
-    var parts = [];
-    var cur = data.categories.find(function(c){ return c.id === catId; });
-    while(cur){
-      parts.unshift(cur.name);
-      cur = cur.parentId ? data.categories.find(function(c){ return c.id === cur.parentId; }) : null;
-    }
-    return parts.join(" > ");
-  }
-
-  function buildCSV(){
-    var rows = [["Section", "Category / Checklist", "Item", "Note", "Deadline", "Status", "Created At", "Completed At"]];
-    data.items.forEach(function(it){
-      rows.push([
-        "Reminder",
-        getCategoryPath(it.categoryId),
-        it.text,
-        it.note || "",
-        it.deadline || "",
-        it.completed ? "Completed" : "Active",
-        formatDate(it.createdAt),
-        it.completed ? formatDate(it.completedAt) : ""
-      ]);
-    });
-    data.checklistItems.forEach(function(it){
-      var cl = data.checklists.find(function(c){ return c.id === it.checklistId; });
-      rows.push([
-        "Checklist",
-        cl ? cl.name : "",
-        it.text,
-        "",
-        "",
-        it.checked ? "Checked" : "Unchecked",
-        "",
-        ""
-      ]);
-    });
-    return rows.map(function(r){ return r.map(csvEscape).join(","); }).join("\r\n");
-  }
-
-  function updateAutoSaveStatus(){
-    var btn = document.getElementById("folderBtn");
-    if(!btn) return;
-    if(!("showDirectoryPicker" in window)){
-      btn.style.display = "none";
-      return;
-    }
-    if(!saveDirHandle){
-      btn.textContent = "🔗 Connect folder";
-      btn.title = "Auto-save your data as JSON + CSV to a folder on this device";
-      return;
-    }
-    saveDirHandle.queryPermission({mode: "readwrite"}).then(function(perm){
-      if(perm === "granted"){
-        autoSaveEnabled = true;
-        btn.textContent = "✅ " + saveDirHandle.name;
-        btn.title = "Auto-saving here. Click to disconnect.";
-      } else {
-        autoSaveEnabled = false;
-        btn.textContent = "🔗 Reconnect folder";
-        btn.title = "Click to restore auto-save permission for \"" + saveDirHandle.name + "\"";
-      }
-    }).catch(function(){});
-  }
-
-  function writeAutoSaveFile(){
-    if(!saveDirHandle) return Promise.resolve();
-    return saveDirHandle.queryPermission({mode: "readwrite"}).then(function(perm){
-      if(perm !== "granted") return;
-      var payload = buildExportPayload();
-      return saveDirHandle.getFileHandle("notes-reminders-data.json", {create: true})
-        .then(function(fh){ return fh.createWritable(); })
-        .then(function(w){ return w.write(JSON.stringify(payload, null, 2)).then(function(){ return w.close(); }); })
-        .then(function(){
-          return saveDirHandle.getFileHandle("notes-reminders-data.csv", {create: true});
-        })
-        .then(function(fh){ return fh.createWritable(); })
-        .then(function(w){ return w.write(buildCSV()).then(function(){ return w.close(); }); });
-    }).catch(function(err){
-      console.error("Auto-save failed", err);
-      showToast("Auto-save failed — check folder access");
-    });
-  }
-
-  function connectNewFolder(){
-    if(!("showDirectoryPicker" in window)){
-      showToast("This browser doesn't support folder auto-save. Use Export instead.");
-      return;
-    }
-    window.showDirectoryPicker({mode: "readwrite"}).then(function(handle){
-      saveDirHandle = handle;
-      autoSaveEnabled = true;
-      return idbSet("saveDir", handle).then(function(){ return writeAutoSaveFile(); });
-    }).then(function(){
-      if(saveDirHandle){
-        updateAutoSaveStatus();
-        showToast('Connected to "' + saveDirHandle.name + '" — auto-saving JSON + CSV here');
-      }
-    }).catch(function(err){
-      if(err && err.name !== "AbortError") showToast("Could not connect folder");
-    });
-  }
-
-  function handleFolderButtonClick(){
-    if(saveDirHandle){
-      saveDirHandle.queryPermission({mode: "readwrite"}).then(function(perm){
-        if(perm === "granted"){
-          openConfirmModal({
-            title: "Disconnect folder?",
-            message: 'Stop auto-saving to "' + saveDirHandle.name + '"? Your existing files stay put — you can reconnect anytime, or export/import manually.',
-            confirmLabel: "Disconnect",
-            danger: true,
-            onConfirm: function(){
-              saveDirHandle = null;
-              autoSaveEnabled = false;
-              idbSet("saveDir", null);
-              updateAutoSaveStatus();
-              closeModal();
-              showToast("Disconnected");
-            }
-          });
-        } else {
-          saveDirHandle.requestPermission({mode: "readwrite"}).then(function(newPerm){
-            if(newPerm === "granted"){
-              autoSaveEnabled = true;
-              updateAutoSaveStatus();
-              writeAutoSaveFile();
-              showToast('Reconnected — auto-saving to "' + saveDirHandle.name + '"');
-            } else {
-              showToast("Permission denied");
-            }
-          }).catch(function(){ connectNewFolder(); });
-        }
-      });
-    } else {
-      connectNewFolder();
-    }
-  }
-
-  function tryRestoreFolder(){
-    idbGet("saveDir").then(function(handle){
-      if(handle){
-        saveDirHandle = handle;
-      }
-      updateAutoSaveStatus();
-    }).catch(function(){ updateAutoSaveStatus(); });
-  }
-
-  var folderBtnEl = document.getElementById("folderBtn");
-  if(folderBtnEl) folderBtnEl.addEventListener("click", handleFolderButtonClick);
-
-  // ---------- Google Drive backup ----------
-  var GIS_SRC = "https://accounts.google.com/gsi/client";
-  var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
-  var DRIVE_FILE_NAME = "notes-reminders-backup.json";
-  // Baked-in Client ID from Google Cloud Console — no need to paste it in the app.
-  // To use a different one, either edit this line or use "Change" in the Drive panel
-  // (a locally-saved override always takes priority over this default).
-  var DRIVE_CLIENT_ID_DEFAULT = "383914037063-7j0fpcpltj1dlvglhrsn27inf1h9juff.apps.googleusercontent.com";
-
-  var driveAccessToken = null;
-  var driveTokenExpiresAt = 0;
-  var driveTokenClient = null;
-  var driveBusy = false;
-  var driveShowIdInput = false;
-
-  function driveGetClientId(){ return localStorage.getItem("driveClientId") || DRIVE_CLIENT_ID_DEFAULT; }
-  function driveGetFileId(){ return localStorage.getItem("driveFileId") || ""; }
-  function driveGetLastBackupAt(){ return localStorage.getItem("driveLastBackupAt") || ""; }
-
-  function loadGisScript(){
-    if(window.google && window.google.accounts && window.google.accounts.oauth2){
-      return Promise.resolve();
-    }
-    if(!navigator.onLine){
-      return Promise.reject(new Error("You're offline — Drive backup needs an internet connection."));
-    }
-    return new Promise(function(resolve, reject){
-      var existing = document.querySelector('script[data-gis="1"]');
-      if(existing){
-        existing.addEventListener("load", function(){ resolve(); });
-        existing.addEventListener("error", function(){ reject(new Error("Couldn't load Google's sign-in script. Check your connection.")); });
-        return;
-      }
-      var s = document.createElement("script");
-      s.src = GIS_SRC;
-      s.async = true;
-      s.dataset.gis = "1";
-      s.onload = function(){ resolve(); };
-      s.onerror = function(){ reject(new Error("Couldn't load Google's sign-in script. Check your connection.")); };
-      document.head.appendChild(s);
-    });
-  }
-
-  function driveSignIn(clientId){
-    return loadGisScript().then(function(){
-      return new Promise(function(resolve, reject){
-        if(!driveTokenClient){
-          driveTokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: clientId,
-            scope: DRIVE_SCOPE,
-            callback: function(){}
-          });
-        }
-        driveTokenClient.callback = function(resp){
-          if(resp && resp.error){
-            reject(new Error(resp.error_description || resp.error));
-            return;
+    function tokenize(str){
+      const tokens = [];
+      let i = 0;
+      const s = str.replace(/\s+/g, '');
+      while (i < s.length){
+        const c = s[i];
+        if (/[0-9.]/.test(c)){
+          let j = i+1;
+          while (j < s.length && /[0-9.]/.test(s[j])) j++;
+          if (j < s.length && (s[j] === 'e' || s[j] === 'E') && /[0-9+\-]/.test(s[j+1]||'')){
+            j++;
+            if (s[j] === '+' || s[j] === '-') j++;
+            while (j < s.length && /[0-9]/.test(s[j])) j++;
           }
-          driveAccessToken = resp.access_token;
-          driveTokenExpiresAt = Date.now() + (Number(resp.expires_in || 3600) * 1000);
-          resolve(driveAccessToken);
-        };
-        try{
-          driveTokenClient.requestAccessToken({hint: ""});
-        }catch(err){
-          reject(err);
+          tokens.push({ type:'num', value: s.slice(i,j) });
+          i = j;
+        } else if (/[a-zA-Z_]/.test(c)){
+          let j = i+1;
+          while (j < s.length && /[a-zA-Z_0-9]/.test(s[j])) j++;
+          tokens.push({ type:'id', value: s.slice(i,j) });
+          i = j;
+        } else if ('+-*/^(),%'.includes(c)){
+          if (c === '*' && s[i+1] === '*'){ tokens.push({type:'op', value:'^'}); i+=2; continue; }
+          tokens.push({ type: c==='('?'lparen':c===')'?'rparen':c===','?'comma':c==='%'?'percent':'op', value: c });
+          i++;
+        } else {
+          throw new Error('Unexpected character: ' + c);
         }
-      });
-    });
-  }
-
-  function driveGetValidToken(){
-    var clientId = driveGetClientId();
-    if(!clientId) return Promise.reject(new Error("Add your Google OAuth Client ID first."));
-    if(driveAccessToken && driveTokenExpiresAt - 30000 > Date.now()){
-      return Promise.resolve(driveAccessToken);
+      }
+      return tokens;
     }
-    return driveSignIn(clientId);
-  }
 
-  function driveApiFetch(url, options){
-    return driveGetValidToken().then(function(token){
-      options = options || {};
-      options.headers = Object.assign({}, options.headers, {Authorization: "Bearer " + token});
-      return fetch(url, options).then(function(res){
-        if(res.status === 401){
-          driveAccessToken = null;
-          throw new Error("Google sign-in expired. Try again.");
+    function parse(tokens){
+      let pos = 0;
+      const peek = () => tokens[pos];
+      const next = () => tokens[pos++];
+
+      function parseExpression(){
+        let left = parseTerm();
+        while (peek() && peek().type === 'op' && (peek().value === '+' || peek().value === '-')){
+          const op = next().value;
+          const right = parseTerm();
+          left = op === '+' ? left.plus(right) : left.minus(right);
         }
-        return res;
-      });
-    });
-  }
-
-  function driveFindExistingFileId(){
-    var q = encodeURIComponent("name = '" + DRIVE_FILE_NAME + "' and trashed = false");
-    var url = "https://www.googleapis.com/drive/v3/files?q=" + q + "&fields=files(id,name)&spaces=drive";
-    return driveApiFetch(url).then(function(res){ return res.json(); }).then(function(json){
-      if(json.files && json.files.length){
-        return json.files[0].id;
+        return left;
       }
-      return null;
-    });
-  }
-
-  function driveCreateFile(){
-    return driveApiFetch("https://www.googleapis.com/drive/v3/files", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({name: DRIVE_FILE_NAME, mimeType: "application/json"})
-    }).then(function(res){ return res.json(); }).then(function(json){ return json.id; });
-  }
-
-  function driveEnsureFileId(){
-    var existing = driveGetFileId();
-    if(existing) return Promise.resolve(existing);
-    return driveFindExistingFileId().then(function(id){
-      if(id){
-        localStorage.setItem("driveFileId", id);
-        return id;
+      function parseTerm(){
+        let left = parseUnary();
+        while (peek() && peek().type === 'op' && (peek().value === '*' || peek().value === '/')){
+          const op = next().value;
+          const right = parseUnary();
+          left = op === '*' ? left.mul(right) : left.div(right);
+        }
+        return left;
       }
-      return driveCreateFile().then(function(newId){
-        localStorage.setItem("driveFileId", newId);
-        return newId;
-      });
-    });
-  }
+      function parseUnary(){
+        if (peek() && peek().type === 'op' && (peek().value === '-' || peek().value === '+')){
+          const op = next().value;
+          const val = parseUnary();
+          return op === '-' ? val.neg() : val;
+        }
+        return parsePow();
+      }
+      function parsePow(){
+        let base = parsePostfix();
+        if (peek() && peek().type === 'op' && peek().value === '^'){
+          next();
+          const exponent = parseUnary();
+          base = base.pow(exponent);
+        }
+        return base;
+      }
+      function parsePostfix(){
+        let val = parsePrimary();
+        while (peek() && peek().type === 'percent'){ next(); val = val.div(100); }
+        return val;
+      }
+      function parsePrimary(){
+        const t = peek();
+        if (!t) throw new Error('Unexpected end of expression');
+        if (t.type === 'num'){ next(); return D(t.value); }
+        if (t.type === 'lparen'){ next(); const v = parseExpression(); expect('rparen'); return v; }
+        if (t.type === 'id'){
+          next();
+          const name = t.value;
+          if (peek() && peek().type === 'lparen'){
+            next();
+            const args = [parseExpression()];
+            while (peek() && peek().type === 'comma'){ next(); args.push(parseExpression()); }
+            expect('rparen');
+            if (args.length === 1 && FN1[name]) return FN1[name](args[0]);
+            if (args.length === 2 && FN2[name]) return FN2[name](args[0], args[1]);
+            throw new Error('Unknown function or wrong arg count: ' + name + '/' + args.length);
+          }
+          if (CONST[name] !== undefined) return CONST[name];
+          const vk = name.toLowerCase();
+          if (vars[vk] !== undefined && vars[vk] !== null) return vars[vk];
+          if (vars[vk] === null) throw new Error('Variable "' + name + '" has no stored value (use STO)');
+          throw new Error('Unknown identifier: ' + name);
+        }
+        throw new Error('Unexpected token: ' + JSON.stringify(t));
+      }
+      function expect(type){
+        if (!peek() || peek().type !== type) throw new Error('Expected ' + type);
+        next();
+      }
 
-  function driveBackupNow(){
-    return driveEnsureFileId().then(function(fileId){
-      var content = JSON.stringify(buildExportPayload(), null, 2);
-      return driveApiFetch("https://www.googleapis.com/upload/drive/v3/files/" + fileId + "?uploadType=media", {
-        method: "PATCH",
-        headers: {"Content-Type": "application/json"},
-        body: content
-      });
-    }).then(function(){
-      localStorage.setItem("driveLastBackupAt", new Date().toISOString());
-    });
-  }
-
-  function driveRestoreLatest(){
-    var fileId = driveGetFileId();
-    if(!fileId){
-      return Promise.reject(new Error("No Drive backup found yet — run \"Backup now\" at least once first."));
+      const result = parseExpression();
+      if (pos !== tokens.length) throw new Error('Unexpected trailing tokens');
+      return result;
     }
-    return driveApiFetch("https://www.googleapis.com/drive/v3/files/" + fileId + "?alt=media")
-      .then(function(res){ return res.json(); });
+
+    return function evaluate(str){ return parse(tokenize(str)); };
   }
 
-  // ---- Drive modal UI ----
-  function renderDrivePanel(){
-    modalTitle.textContent = "Google Drive Backup";
-    modalBody.innerHTML = "";
-    modalFooter.innerHTML = "";
+  // ---- Notation formatting ----
+  function formatDecimal(dec, notation, sig){
+    if (!dec.isFinite()) return dec.toString();
+    if (notation === 'sci') {
+      let s = dec.toExponential(Math.max(0, sig-1));
+      s = s.replace(/(\.\d*?)0+e/, '$1e').replace(/\.e/, 'e');
+      return s;
+    }
+    if (notation === 'eng'){
+      if (dec.isZero()) return '0e+0';
+      const neg = dec.isNegative();
+      const abs = dec.abs();
+      let exp = Math.floor(abs.log(10).toNumber());
+      let engExp = Math.floor(exp/3)*3;
+      let mantissa = abs.div(Decimal.pow(10, engExp));
+      if (mantissa.gte(1000)) { mantissa = mantissa.div(1000); engExp += 3; }
+      if (mantissa.lt(1)) { mantissa = mantissa.mul(1000); engExp -= 3; }
+      const m = mantissa.toSignificantDigits(sig).toString();
+      return (neg?'-':'') + m + 'e' + (engExp>=0?'+':'') + engExp;
+    }
+    return dec.toSignificantDigits(sig).toString();
+  }
 
-    var clientId = driveGetClientId();
+  // ---------------------------------------------------------------
+  // Physical keypad state: angle unit, notation, shift/alpha, hyp
+  // ---------------------------------------------------------------
+  const display = document.getElementById('display');
+  const expressionEl = document.getElementById('expression');
+  const precisionInput = document.getElementById('precision');
+  let justEvaluated = false;
 
-    if(driveShowIdInput){
-      var info = document.createElement("div");
-      info.className = "drive-status";
-      info.textContent = "Paste a different Google OAuth Client ID to use instead of the built-in one (see the README for how to create one).";
-      modalBody.appendChild(info);
+  let degRadState = 'deg';
+  function isDegMode(){ return degRadState === 'deg'; }
+  function toggleDegRad(){ degRadState = (degRadState === 'deg') ? 'rad' : 'deg'; updateBadges(); }
 
-      var input = document.createElement("input");
-      input.type = "text";
-      input.placeholder = "xxxxx.apps.googleusercontent.com";
-      input.value = localStorage.getItem("driveClientId") || "";
-      modalBody.appendChild(input);
+  let notationMode = 'normal'; // normal | sci | eng
+  function cycleNotation(){
+    notationMode = notationMode === 'normal' ? 'sci' : notationMode === 'sci' ? 'eng' : 'normal';
+    updateBadges();
+    showToast('Notation: ' + notationMode.toUpperCase());
+  }
 
-      var row = document.createElement("div");
-      row.className = "drive-row";
-      var saveBtn = document.createElement("button");
-      saveBtn.className = "drive-btn primary";
-      saveBtn.textContent = "Save Client ID";
-      saveBtn.addEventListener("click", function(){
-        var v = input.value.trim();
-        if(!v){ showToast("Enter a Client ID first"); return; }
-        localStorage.setItem("driveClientId", v);
-        localStorage.removeItem("driveFileId");
-        driveAccessToken = null;
-        driveTokenClient = null;
-        driveShowIdInput = false;
-        renderDrivePanel();
-      });
-      row.appendChild(saveBtn);
+  let shiftArmed = false, alphaArmed = false;
+  let stoPending = false, rclPending = false;
+  let hypActive = false;
 
-      if(localStorage.getItem("driveClientId")){
-        var resetBtn = document.createElement("button");
-        resetBtn.className = "drive-btn secondary";
-        resetBtn.textContent = "Use built-in Client ID instead";
-        resetBtn.addEventListener("click", function(){
-          localStorage.removeItem("driveClientId");
-          localStorage.removeItem("driveFileId");
-          driveAccessToken = null;
-          driveTokenClient = null;
-          driveShowIdInput = false;
-          renderDrivePanel();
-        });
-        row.appendChild(resetBtn);
-      }
-      modalBody.appendChild(row);
+  function currentPrecision(){
+    let p = parseInt(precisionInput.value, 10);
+    if (!Number.isFinite(p) || p < 4) p = 4;
+    if (p > 80) p = 80;
+    return p;
+  }
+
+  function updateVarSummary(){
+    const parts = ['x','y','a','b','c'].filter(k => variables[k] !== null)
+      .map(k => k.toUpperCase() + '=' + variables[k].toSignificantDigits(6).toString());
+    document.getElementById('varSummaryLcd').textContent = parts.join('  ');
+  }
+
+  const shiftBtn = document.getElementById('shiftBtn');
+  const alphaBtn = document.getElementById('alphaBtn');
+  const badgeAngle = document.getElementById('badgeAngle');
+  const badgeNotation = document.getElementById('badgeNotation');
+  const badgeShift = document.getElementById('badgeShift');
+  const badgeAlpha = document.getElementById('badgeAlpha');
+  const badgeSto = document.getElementById('badgeSto');
+  const badgeMem = document.getElementById('badgeMem');
+
+  function setBadge(el, on, onText, offText){
+    el.textContent = on ? onText : (offText !== undefined ? offText : onText);
+    el.classList.toggle('b-on', on);
+    el.classList.toggle('b-off', !on);
+  }
+
+  function updateBadges(){
+    badgeAngle.textContent = isDegMode() ? 'DEG' : 'RAD';
+    badgeNotation.textContent = notationMode.toUpperCase();
+    setBadge(badgeShift, shiftArmed, 'S');
+    setBadge(badgeAlpha, alphaArmed, 'A');
+    badgeSto.textContent = stoPending ? 'STO?' : rclPending ? 'RCL?' : '';
+    badgeSto.classList.toggle('b-on', stoPending || rclPending);
+    badgeSto.classList.toggle('b-off', !(stoPending || rclPending));
+    setBadge(badgeMem, !memoryValue.isZero(), 'M');
+    shiftBtn.classList.toggle('active', shiftArmed);
+    alphaBtn.classList.toggle('active', alphaArmed);
+    document.getElementById('hypKey').classList.toggle('active-toggle', hypActive);
+  }
+
+  // ---- Key label rendering ----
+  function relabelKey(btn){
+    const shiftL = btn.dataset.shiftlabel, alphaL = btn.dataset.alphalabel, main = btn.dataset.label;
+    btn.innerHTML = (shiftL ? `<span class="k-shift">${shiftL}</span>` : '')
+      + (alphaL ? `<span class="k-alpha">${alphaL}</span>` : '')
+      + `<span class="k-main">${main}</span>`;
+  }
+  document.querySelectorAll('.pkey[data-label]').forEach(relabelKey);
+
+  // ---- hyp toggle swaps sin/cos/tan <-> sinh/cosh/tanh (and their inverses) ----
+  const trigKeys = [
+    { id:'sinKey', norm:['sin','asin','sin','sin⁻¹'], hyp:['sinh','asinh','sinh','sinh⁻¹'] },
+    { id:'cosKey', norm:['cos','acos','cos','cos⁻¹'], hyp:['cosh','acosh','cosh','cosh⁻¹'] },
+    { id:'tanKey', norm:['tan','atan','tan','tan⁻¹'], hyp:['tanh','atanh','tanh','tanh⁻¹'] }
+  ];
+  function updateHypUI(){
+    trigKeys.forEach(t => {
+      const btn = document.getElementById(t.id);
+      const [baseFn, shiftFn, label, shiftLabel] = hypActive ? t.hyp : t.norm;
+      btn.dataset.base = 'fn:' + baseFn;
+      btn.dataset.shift = 'fn:' + shiftFn;
+      btn.dataset.label = label;
+      btn.dataset.shiftlabel = shiftLabel;
+      relabelKey(btn);
+    });
+    updateBadges();
+  }
+
+  // ---------------------------------------------------------------
+  // Display editing helpers
+  // ---------------------------------------------------------------
+  function insertAtCursor(text){
+    const start = display.selectionStart ?? display.value.length;
+    const end = display.selectionEnd ?? display.value.length;
+    const val = display.value;
+    if (justEvaluated && !/^[0-9.]$/.test(text)) {
+      display.value = val + text;
+    } else if (justEvaluated) {
+      display.value = text;
+    } else if (val === '0' && start === val.length && end === val.length) {
+      display.value = text === '.' ? '0.' : text;
+      display.setSelectionRange(display.value.length, display.value.length);
     } else {
-      var idLine = document.createElement("div");
-      idLine.className = "drive-status";
-      var shortId = clientId.length > 18 ? clientId.slice(0, 10) + "…" + clientId.slice(-8) : clientId;
-      idLine.textContent = "Client ID: " + shortId + " ";
-      var changeBtn = document.createElement("button");
-      changeBtn.className = "drive-link";
-      changeBtn.textContent = "Change";
-      changeBtn.addEventListener("click", function(){
-        driveShowIdInput = true;
-        renderDrivePanel();
-      });
-      idLine.appendChild(changeBtn);
-      modalBody.appendChild(idLine);
-
-      var signedIn = !!driveAccessToken && driveTokenExpiresAt > Date.now();
-      var statusLine = document.createElement("div");
-      statusLine.className = "drive-status";
-      var lastBackup = driveGetLastBackupAt();
-      statusLine.textContent = (signedIn ? "Signed in ✓" : "Not signed in yet") +
-        (lastBackup ? " · Last backup: " + formatDate(lastBackup) : " · No backup yet");
-      modalBody.appendChild(statusLine);
-
-      var row = document.createElement("div");
-      row.className = "drive-row";
-
-      if(!signedIn){
-        var signInBtn = document.createElement("button");
-        signInBtn.className = "drive-btn primary";
-        signInBtn.textContent = "Sign in with Google";
-        signInBtn.addEventListener("click", function(){
-          signInBtn.disabled = true;
-          signInBtn.textContent = "Opening Google sign-in…";
-          driveSignIn(clientId).then(function(){
-            showToast("Signed in");
-            renderDrivePanel();
-          }).catch(function(err){
-            showToast(err.message || "Sign-in failed");
-            renderDrivePanel();
-          });
-        });
-        row.appendChild(signInBtn);
-      } else {
-        var backupBtn = document.createElement("button");
-        backupBtn.className = "drive-btn primary";
-        backupBtn.textContent = "Backup now";
-        backupBtn.disabled = driveBusy;
-        backupBtn.addEventListener("click", function(){
-          driveBusy = true;
-          backupBtn.disabled = true;
-          backupBtn.textContent = "Backing up…";
-          driveBackupNow().then(function(){
-            driveBusy = false;
-            showToast("Backed up to Drive");
-            renderDrivePanel();
-          }).catch(function(err){
-            driveBusy = false;
-            showToast(err.message || "Backup failed");
-            renderDrivePanel();
-          });
-        });
-        row.appendChild(backupBtn);
-
-        var restoreBtn = document.createElement("button");
-        restoreBtn.className = "drive-btn secondary";
-        restoreBtn.textContent = "Restore latest backup";
-        restoreBtn.addEventListener("click", function(){
-          restoreBtn.disabled = true;
-          restoreBtn.textContent = "Fetching…";
-          driveRestoreLatest().then(function(parsed){
-            restoreBtn.disabled = false;
-            restoreBtn.textContent = "Restore latest backup";
-            if(!parsed || !Array.isArray(parsed.categories) || !Array.isArray(parsed.items)){
-              showToast("Backup file looks invalid");
-              return;
-            }
-            openConfirmModal({
-              title: "Restore from Drive?",
-              message: "This will replace everything currently on this device (" + data.categories.length + " categories, " + data.items.length + " reminders, " + (data.checklists||[]).length + " checklists) with the Drive backup (" + parsed.categories.length + " categories, " + parsed.items.length + " reminders). This cannot be undone.",
-              confirmLabel: "Replace",
-              danger: true,
-              onConfirm: function(){
-                data = {
-                  categories: parsed.categories,
-                  items: parsed.items,
-                  checklists: Array.isArray(parsed.checklists) ? parsed.checklists : [],
-                  checklistItems: Array.isArray(parsed.checklistItems) ? parsed.checklistItems : [],
-                  collapsed: {}
-                };
-                persistLocal();
-                render();
-                showToast("Restored from Drive");
-                closeModal();
-              }
-            });
-          }).catch(function(err){
-            restoreBtn.disabled = false;
-            restoreBtn.textContent = "Restore latest backup";
-            showToast(err.message || "Restore failed");
-          });
-        });
-        row.appendChild(restoreBtn);
-
-        var signOutBtn = document.createElement("button");
-        signOutBtn.className = "drive-btn secondary";
-        signOutBtn.textContent = "Sign out";
-        signOutBtn.addEventListener("click", function(){
-          driveAccessToken = null;
-          renderDrivePanel();
-        });
-        row.appendChild(signOutBtn);
-      }
-
-      modalBody.appendChild(row);
+      display.value = val.slice(0, start) + text + val.slice(end);
+      const pos = start + text.length;
+      display.setSelectionRange(pos, pos);
     }
-
-    var closeBtn = document.createElement("button");
-    closeBtn.className = "btn-cancel";
-    closeBtn.textContent = "Close";
-    closeBtn.onclick = closeModal;
-    modalFooter.appendChild(closeBtn);
-
-    modalOverlay.classList.add("open");
+    justEvaluated = false;
+    display.focus();
   }
 
-  var driveBtnEl = document.getElementById("driveBtn");
-  if(driveBtnEl) driveBtnEl.addEventListener("click", function(){
-    driveShowIdInput = false;
-    renderDrivePanel();
+  function clearAll(){
+    display.value = '0'; expressionEl.textContent = ''; justEvaluated = false;
+    shiftArmed = false; alphaArmed = false; stoPending = false; rclPending = false;
+    updateBadges();
+    display.focus();
+  }
+
+  function doDel(){
+    if (justEvaluated) { display.value = '0'; justEvaluated = false; }
+    else {
+      const start = display.selectionStart ?? display.value.length;
+      const end = display.selectionEnd ?? display.value.length;
+      if (start === end && start > 0) {
+        display.value = display.value.slice(0, start-1) + display.value.slice(start);
+        display.setSelectionRange(start-1, start-1);
+      } else {
+        display.value = display.value.slice(0, start) + display.value.slice(end);
+        display.setSelectionRange(start, start);
+      }
+      if (display.value === '') display.value = '0';
+    }
+    display.focus();
+  }
+
+  function evalDisplayToDecimal(){
+    Decimal.set({ precision: currentPrecision() + 10 });
+    const evaluate = makeEvaluator({ deg: isDegMode() });
+    return evaluate(display.value);
+  }
+
+  function doEquals(){
+    try {
+      const raw = display.value;
+      if (!raw || !raw.trim()) return;
+      Decimal.set({ precision: currentPrecision() + 10 });
+      const evaluate = makeEvaluator({ deg: isDegMode() });
+      const result = evaluate(raw);
+      const formatted = formatDecimal(result, notationMode, currentPrecision());
+      expressionEl.textContent = raw + ' =';
+      display.value = formatted;
+      variables.ans = result;
+      addHistory('sci', raw, formatted);
+      justEvaluated = true;
+    } catch (err) {
+      display.value = 'Error: ' + err.message;
+      justEvaluated = true;
+    }
+  }
+
+  // Continued-fraction approximation of the current display value
+  function decimalToFraction(dec, maxDenominator){
+    maxDenominator = maxDenominator || new Decimal('1e7');
+    const sign = dec.isNegative() ? -1 : 1;
+    let x = dec.abs();
+    let h0 = new Decimal(0), h1 = new Decimal(1);
+    let k0 = new Decimal(1), k1 = new Decimal(0);
+    let b = x;
+    for (let i = 0; i < 64; i++){
+      const a = b.floor();
+      const h2 = a.mul(h1).plus(h0);
+      const k2 = a.mul(k1).plus(k0);
+      h0 = h1; h1 = h2; k0 = k1; k1 = k2;
+      if (k1.gt(maxDenominator)) { h1 = h0; k1 = k0; break; }
+      const frac = b.minus(a);
+      if (frac.abs().lt('1e-14')) break;
+      b = new Decimal(1).div(frac);
+    }
+    return { num: h1.mul(sign), den: k1 };
+  }
+
+  function doFrac(){
+    try {
+      const val = evalDisplayToDecimal();
+      const { num, den } = decimalToFraction(val);
+      const formatted = den.eq(1) ? num.toString() : (num.toString() + '/' + den.toString());
+      expressionEl.textContent = display.value + ' → fraction =';
+      display.value = formatted;
+      addHistory('sci', 'frac(' + val.toSignificantDigits(12).toString() + ')', formatted);
+      justEvaluated = true;
+    } catch(e){ showToast('Cannot convert: ' + e.message); }
+  }
+
+  function doRound(){
+    try {
+      const val = evalDisplayToDecimal();
+      const rounded = val.round();
+      expressionEl.textContent = display.value + ' → round =';
+      display.value = rounded.toString();
+      addHistory('sci', 'round(' + val.toSignificantDigits(12).toString() + ')', rounded.toString());
+      justEvaluated = true;
+    } catch(e){ showToast('Cannot round: ' + e.message); }
+  }
+
+  function doStoreTo(letter){
+    try {
+      const val = evalDisplayToDecimal();
+      variables[letter] = val;
+      updateVarSummary();
+      showToast('STO → ' + letter.toUpperCase());
+    } catch(e){ showToast('Cannot store: ' + e.message); }
+  }
+  function doRecallFrom(letter){
+    const v = variables[letter];
+    if (v === null) { showToast('No value stored in ' + letter.toUpperCase()); return; }
+    insertAtCursor(v.toString());
+  }
+
+  // ---------------------------------------------------------------
+  // Command dispatcher for physical keys
+  // ---------------------------------------------------------------
+  function runAction(name){
+    switch(name){
+      case 'eq': doEquals(); break;
+      case 'ac': clearAll(); break;
+      case 'del': doDel(); break;
+      case 'mplus':
+        try { memoryValue = memoryValue.plus(evalDisplayToDecimal()); showToast('Added to memory'); }
+        catch(e){ showToast('Cannot add: ' + e.message); }
+        updateBadges();
+        break;
+      case 'mminus':
+        try { memoryValue = memoryValue.minus(evalDisplayToDecimal()); showToast('Subtracted from memory'); }
+        catch(e){ showToast('Cannot subtract: ' + e.message); }
+        updateBadges();
+        break;
+      case 'mr': insertAtCursor(memoryValue.toString()); break;
+      case 'mc': memoryValue = new Decimal(0); updateBadges(); showToast('Memory cleared'); break;
+      case 'sto': stoPending = true; rclPending = false; updateBadges(); break;
+      case 'rcl': rclPending = true; stoPending = false; updateBadges(); break;
+      case 'ans': insertAtCursor(variables.ans.toString()); break;
+      case 'ran': insertAtCursor(Math.random().toFixed(9)); break;
+      case 'frac': doFrac(); break;
+      case 'round': doRound(); break;
+      case 'cyclenotation': cycleNotation(); break;
+      case 'hyptoggle': hypActive = !hypActive; updateHypUI(); break;
+    }
+  }
+
+  function runCmd(cmd){
+    if (!cmd) return;
+    if (cmd.startsWith('ins:')) insertAtCursor(cmd.slice(4));
+    else if (cmd.startsWith('fn:')) insertAtCursor(cmd.slice(3) + '(');
+    else if (cmd.startsWith('act:')) runAction(cmd.slice(4));
+    else if (cmd.startsWith('var:')){
+      const letter = cmd.slice(4);
+      if (stoPending) { doStoreTo(letter); stoPending = false; updateBadges(); }
+      else if (rclPending) { doRecallFrom(letter); rclPending = false; updateBadges(); }
+      else insertAtCursor(letter);
+    }
+  }
+
+  document.querySelectorAll('.pkey[data-base]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      let cmd;
+      if (shiftArmed && btn.dataset.shift) { cmd = btn.dataset.shift; shiftArmed = false; }
+      else if (alphaArmed && btn.dataset.alpha) { cmd = btn.dataset.alpha; alphaArmed = false; }
+      else { cmd = btn.dataset.base; shiftArmed = false; alphaArmed = false; }
+      updateBadges();
+      runCmd(cmd);
+    });
   });
 
-  // ---------- Offline support (service worker) ----------
-  if("serviceWorker" in navigator){
-    window.addEventListener("load", function(){
-      navigator.serviceWorker.register("./sw.js").catch(function(err){
-        // Fails silently on file:// or unsupported hosting — app still works online.
-        console.warn("Service worker registration failed:", err);
-      });
+  shiftBtn.addEventListener('click', () => { shiftArmed = !shiftArmed; if (shiftArmed) alphaArmed = false; updateBadges(); });
+  alphaBtn.addEventListener('click', () => { alphaArmed = !alphaArmed; if (alphaArmed) shiftArmed = false; updateBadges(); });
+  document.getElementById('modeBtn').addEventListener('click', toggleDegRad);
+  document.getElementById('onBtn').addEventListener('click', clearAll);
+
+  function moveCursor(delta){
+    const pos = (display.selectionStart ?? display.value.length) + delta;
+    const clamped = Math.max(0, Math.min(display.value.length, pos));
+    display.setSelectionRange(clamped, clamped);
+    display.focus();
+  }
+  document.getElementById('dpadLeft').addEventListener('click', () => moveCursor(-1));
+  document.getElementById('dpadRight').addEventListener('click', () => moveCursor(1));
+
+  let historyNavIdx = -1;
+  function historyNav(delta){
+    const sciHistory = history.filter(h => h.label === 'sci');
+    if (sciHistory.length === 0) return;
+    historyNavIdx = Math.max(-1, Math.min(sciHistory.length-1, historyNavIdx+delta));
+    if (historyNavIdx === -1) return;
+    display.value = sciHistory[historyNavIdx].result;
+    expressionEl.textContent = '';
+    justEvaluated = true;
+    display.focus();
+  }
+  document.getElementById('dpadUp').addEventListener('click', () => historyNav(1));
+  document.getElementById('dpadDown').addEventListener('click', () => historyNav(-1));
+
+  display.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); doEquals(); }
+    else if (e.key === 'Escape') { clearAll(); }
+    else if (justEvaluated && /^[0-9]$/.test(e.key)) { display.value = ''; justEvaluated = false; }
+    else if (justEvaluated && e.key !== 'Backspace') { justEvaluated = false; }
+  });
+
+  display.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text');
+    const cleaned = text.replace(/[^0-9+\-*/().,%^a-zA-Z\s]/g, '').trim();
+    if (!cleaned) return;
+    if (justEvaluated) { display.value = cleaned; justEvaluated = false; }
+    else if (display.value === '0') { display.value = cleaned; display.setSelectionRange(cleaned.length, cleaned.length); }
+    else {
+      const start = display.selectionStart ?? display.value.length;
+      const end = display.selectionEnd ?? display.value.length;
+      display.value = display.value.slice(0, start) + cleaned + display.value.slice(end);
+      const pos = start + cleaned.length;
+      display.setSelectionRange(pos, pos);
+    }
+    showToast('Pasted');
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (document.activeElement !== display && document.getElementById('tab-sci').classList.contains('active')
+        && /^[0-9+\-*/().^%]$/.test(e.key)) {
+      display.focus();
+    }
+  });
+
+  updateBadges();
+
+  // ---------------------------------------------------------------
+  // Statistics tab
+  // ---------------------------------------------------------------
+  function parseNumberList(str){
+    return str.split(/[\s,]+/).map(s=>s.trim()).filter(Boolean).map(s=>{
+      const n = Number(s);
+      if (!Number.isFinite(n)) throw new Error('"' + s + '" is not a valid number');
+      return n;
     });
   }
+  function computeStats(nums){
+    const n = nums.length;
+    if (n === 0) throw new Error('Enter at least one number');
+    const sum = nums.reduce((a,b)=>a+b,0);
+    const mean = sum/n;
+    const sorted = [...nums].sort((a,b)=>a-b);
+    const median = n % 2 === 0 ? (sorted[n/2-1]+sorted[n/2])/2 : sorted[(n-1)/2];
+    const sampleVar = n > 1 ? nums.reduce((a,b)=>a+(b-mean)**2,0)/(n-1) : 0;
+    const popVar = nums.reduce((a,b)=>a+(b-mean)**2,0)/n;
+    return {
+      count:n, sum, mean, median,
+      sampleVariance:sampleVar, sampleStdDev:Math.sqrt(sampleVar),
+      popVariance:popVar, popStdDev:Math.sqrt(popVar),
+      min:sorted[0], max:sorted[n-1], range:sorted[n-1]-sorted[0]
+    };
+  }
 
-  // init
-  render();
-  updateAutoSaveStatus();
-  tryRestoreFolder();
+  document.getElementById('statsCompute').addEventListener('click', () => {
+    const box = document.getElementById('statsResults');
+    box.style.display = 'block';
+    try {
+      const nums = parseNumberList(document.getElementById('statsInput').value);
+      const s = computeStats(nums);
+      const fmt = (x) => Number.isInteger(x) ? x.toString() : x.toPrecision(10).replace(/\.?0+$/,'');
+      const text = `Count: ${s.count}\nSum: ${fmt(s.sum)}\nMean: ${fmt(s.mean)}\nMedian: ${fmt(s.median)}\nMin: ${fmt(s.min)}   Max: ${fmt(s.max)}   Range: ${fmt(s.range)}\nSample Variance: ${fmt(s.sampleVariance)}\nSample Std Dev: ${fmt(s.sampleStdDev)}\nPopulation Variance: ${fmt(s.popVariance)}\nPopulation Std Dev: ${fmt(s.popStdDev)}`;
+      box.classList.remove('error');
+      box.textContent = text;
+      addHistory('stats', `n=${s.count} data points`, `mean=${fmt(s.mean)}, sd=${fmt(s.sampleStdDev)}`);
+    } catch(e) {
+      box.classList.add('error');
+      box.textContent = 'Error: ' + e.message;
+    }
+  });
+
+  document.getElementById('combCompute').addEventListener('click', () => {
+    const box = document.getElementById('combResults');
+    box.style.display = 'block';
+    try {
+      const n = new Decimal(document.getElementById('combN').value);
+      const r = new Decimal(document.getElementById('combR').value);
+      Decimal.set({ precision: 60 });
+      const evaluate = makeEvaluator({});
+      const ncr = evaluate(`nCr(${n},${r})`);
+      const npr = evaluate(`nPr(${n},${r})`);
+      box.classList.remove('error');
+      box.textContent = `nCr(${n},${r}) = ${ncr.toString()}\nnPr(${n},${r}) = ${npr.toString()}`;
+      addHistory('comb', `nCr/nPr(${n},${r})`, `${ncr.toString()} / ${npr.toString()}`);
+    } catch(e) {
+      box.classList.add('error');
+      box.textContent = 'Error: ' + e.message;
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // Matrix tab
+  // ---------------------------------------------------------------
+  function buildMatrixGrid(container, size, prefix){
+    container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+    container.innerHTML = '';
+    for (let i=0;i<size;i++){
+      for (let j=0;j<size;j++){
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.id = `${prefix}_${i}_${j}`;
+        input.value = i===j ? '1' : '0';
+        container.appendChild(input);
+      }
+    }
+  }
+  function readMatrix(size, prefix){
+    const M = [];
+    for (let i=0;i<size;i++){
+      const row = [];
+      for (let j=0;j<size;j++){
+        const v = Number(document.getElementById(`${prefix}_${i}_${j}`).value);
+        if (!Number.isFinite(v)) throw new Error(`Invalid value at ${prefix}[${i}][${j}]`);
+        row.push(v);
+      }
+      M.push(row);
+    }
+    return M;
+  }
+  function matAdd(A,B){ return A.map((row,i)=>row.map((v,j)=>v+B[i][j])); }
+  function matSub(A,B){ return A.map((row,i)=>row.map((v,j)=>v-B[i][j])); }
+  function matMul(A,B){
+    const r=A.length, k=A[0].length, c=B[0].length;
+    const R = Array.from({length:r},()=>Array(c).fill(0));
+    for(let i=0;i<r;i++) for(let j=0;j<c;j++) for(let x=0;x<k;x++) R[i][j]+=A[i][x]*B[x][j];
+    return R;
+  }
+  function matTranspose(A){ return A[0].map((_,j)=>A.map(row=>row[j])); }
+  function matDet(A){
+    const n = A.length;
+    if (n===1) return A[0][0];
+    if (n===2) return A[0][0]*A[1][1]-A[0][1]*A[1][0];
+    let det=0;
+    for(let j=0;j<n;j++){
+      const minor = A.slice(1).map(row=>row.filter((_,c)=>c!==j));
+      det += (j%2===0?1:-1)*A[0][j]*matDet(minor);
+    }
+    return det;
+  }
+  function matInverse(A){
+    const n = A.length;
+    const det = matDet(A);
+    if (Math.abs(det) < 1e-12) throw new Error('singular matrix (determinant is 0)');
+    if (n===1) return [[1/A[0][0]]];
+    const cof = Array.from({length:n},()=>Array(n).fill(0));
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+      const minor = A.filter((_,r)=>r!==i).map(row=>row.filter((_,c)=>c!==j));
+      cof[i][j] = ((i+j)%2===0?1:-1)*matDet(minor);
+    }
+    return matTranspose(cof).map(row=>row.map(v=>v/det));
+  }
+  function formatMatrix(M){
+    return M.map(row=>row.map(v=>Number.isInteger(v)?v:parseFloat(v.toPrecision(8))).join('\t')).join('\n');
+  }
+
+  const matSizeSel = document.getElementById('matSize');
+  function refreshMatrixGrids(){
+    const size = parseInt(matSizeSel.value,10);
+    buildMatrixGrid(document.getElementById('matGridA'), size, 'A');
+    buildMatrixGrid(document.getElementById('matGridB'), size, 'B');
+  }
+  matSizeSel.addEventListener('change', refreshMatrixGrids);
+  refreshMatrixGrids();
+
+  document.getElementById('matCompute').addEventListener('click', () => {
+    const box = document.getElementById('matResults');
+    box.style.display = 'block';
+    const size = parseInt(matSizeSel.value,10);
+    const op = document.getElementById('matOp').value;
+    try {
+      const A = readMatrix(size,'A');
+      const B = readMatrix(size,'B');
+      let out, label;
+      switch(op){
+        case 'add': out = formatMatrix(matAdd(A,B)); label='A+B'; break;
+        case 'sub': out = formatMatrix(matSub(A,B)); label='A-B'; break;
+        case 'mul': out = formatMatrix(matMul(A,B)); label='A×B'; break;
+        case 'detA': out = String(matDet(A)); label='det(A)'; break;
+        case 'detB': out = String(matDet(B)); label='det(B)'; break;
+        case 'invA': out = formatMatrix(matInverse(A)); label='inv(A)'; break;
+        case 'invB': out = formatMatrix(matInverse(B)); label='inv(B)'; break;
+        case 'transA': out = formatMatrix(matTranspose(A)); label='Aᵀ'; break;
+        case 'transB': out = formatMatrix(matTranspose(B)); label='Bᵀ'; break;
+      }
+      box.classList.remove('error');
+      box.textContent = out;
+      addHistory('matrix', `${label} (${size}x${size})`, out.replace(/\n/g,' | '));
+    } catch(e){
+      box.classList.add('error');
+      box.textContent = 'Error: ' + e.message;
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // Complex tab
+  // ---------------------------------------------------------------
+  function cAdd(a,b){ return {re:a.re+b.re, im:a.im+b.im}; }
+  function cSub(a,b){ return {re:a.re-b.re, im:a.im-b.im}; }
+  function cMul(a,b){ return {re:a.re*b.re-a.im*b.im, im:a.re*b.im+a.im*b.re}; }
+  function cDiv(a,b){
+    const d = b.re*b.re+b.im*b.im;
+    if (d===0) throw new Error('division by zero');
+    return {re:(a.re*b.re+a.im*b.im)/d, im:(a.im*b.re-a.re*b.im)/d};
+  }
+  function cMod(a){ return Math.sqrt(a.re*a.re+a.im*a.im); }
+  function cArg(a){ return Math.atan2(a.im,a.re); }
+  function fmtComplex(z){
+    const re = parseFloat(z.re.toPrecision(10));
+    const im = parseFloat(z.im.toPrecision(10));
+    return `${re} ${im>=0?'+':'-'} ${Math.abs(im)}i`;
+  }
+
+  document.getElementById('complexCompute').addEventListener('click', () => {
+    const box = document.getElementById('complexResults');
+    box.style.display = 'block';
+    try {
+      const z1 = { re: Number(document.getElementById('c1re').value), im: Number(document.getElementById('c1im').value) };
+      const z2 = { re: Number(document.getElementById('c2re').value), im: Number(document.getElementById('c2im').value) };
+      const op = document.getElementById('complexOp').value;
+      let out, label;
+      switch(op){
+        case 'add': out = fmtComplex(cAdd(z1,z2)); label='z1+z2'; break;
+        case 'sub': out = fmtComplex(cSub(z1,z2)); label='z1-z2'; break;
+        case 'mul': out = fmtComplex(cMul(z1,z2)); label='z1×z2'; break;
+        case 'div': out = fmtComplex(cDiv(z1,z2)); label='z1/z2'; break;
+        case 'mod1': out = String(cMod(z1)); label='|z1|'; break;
+        case 'arg1': {
+          const rad = cArg(z1);
+          out = `${rad.toFixed(6)} rad  (${(rad*180/Math.PI).toFixed(6)}°)`;
+          label='arg(z1)';
+          break;
+        }
+        case 'conj1': out = fmtComplex({re:z1.re, im:-z1.im}); label='conj(z1)'; break;
+        case 'polar1': {
+          const r = cMod(z1), theta = cArg(z1);
+          out = `r = ${r.toFixed(8)}, θ = ${theta.toFixed(6)} rad (${(theta*180/Math.PI).toFixed(6)}°)`;
+          label='polar(z1)';
+          break;
+        }
+      }
+      box.classList.remove('error');
+      box.textContent = out;
+      addHistory('complex', label, out);
+    } catch(e){
+      box.classList.add('error');
+      box.textContent = 'Error: ' + e.message;
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // Graph tab
+  // ---------------------------------------------------------------
+  const graphCanvas = document.getElementById('graphCanvas');
+  const gctx = graphCanvas.getContext('2d');
+  const graphFnInput = document.getElementById('graphFn');
+  const graphXMinInput = document.getElementById('graphXMin');
+  const graphXMaxInput = document.getElementById('graphXMax');
+  const graphTraceReadout = document.getElementById('graphTraceReadout');
+  let lastGraph = null; // { xs, ys, xmin, xmax, ymin, ymax, w, h }
+
+  function evalFnAt(fnStr, xNum){
+    const savedPrecision = Decimal.precision;
+    try {
+      Decimal.set({ precision: 18 });
+      variables.x = new Decimal(xNum);
+      const evaluate = makeEvaluator({ deg: isDegMode() });
+      const r = evaluate(fnStr);
+      const n = r.toNumber();
+      return Number.isFinite(n) ? n : NaN;
+    } catch(e){
+      return NaN;
+    } finally {
+      Decimal.set({ precision: savedPrecision });
+    }
+  }
+
+  function plotGraph(){
+    const box = document.getElementById('graphResults');
+    box.style.display = 'none';
+    const fnStr = graphFnInput.value.trim();
+    let xmin = Number(graphXMinInput.value), xmax = Number(graphXMaxInput.value);
+    if (!Number.isFinite(xmin) || !Number.isFinite(xmax) || xmin >= xmax) {
+      showToast('Invalid x-range'); return;
+    }
+    const w = graphCanvas.width, h = graphCanvas.height;
+    const N = 300;
+    const xs = [], ys = [];
+    for (let i=0;i<=N;i++){
+      const x = xmin + (xmax-xmin)*i/N;
+      xs.push(x);
+      ys.push(evalFnAt(fnStr, x));
+    }
+    const finiteYs = ys.filter(Number.isFinite);
+    let ymin, ymax;
+    if (finiteYs.length === 0) { ymin=-1; ymax=1; }
+    else {
+      ymin = Math.min(...finiteYs); ymax = Math.max(...finiteYs);
+      if (ymin === ymax) { ymin -= 1; ymax += 1; }
+      const pad = (ymax-ymin)*0.1;
+      ymin -= pad; ymax += pad;
+    }
+    lastGraph = { fnStr, xs, ys, xmin, xmax, ymin, ymax, w, h };
+    drawGraph();
+    addHistory('graph', `plot ${fnStr} on [${xmin}, ${xmax}]`, `y ∈ [${ymin.toFixed(3)}, ${ymax.toFixed(3)}]`);
+  }
+
+  function dataToPx(x,y){
+    const g = lastGraph;
+    const px = (x - g.xmin) / (g.xmax - g.xmin) * g.w;
+    const py = g.h - (y - g.ymin) / (g.ymax - g.ymin) * g.h;
+    return [px, py];
+  }
+
+  function drawGraph(){
+    if (!lastGraph) return;
+    const g = lastGraph;
+    gctx.clearRect(0,0,g.w,g.h);
+    gctx.fillStyle = '#20242e';
+    gctx.fillRect(0,0,g.w,g.h);
+
+    gctx.strokeStyle = '#2c3140';
+    gctx.lineWidth = 1;
+    const gridLines = 8;
+    for (let i=0;i<=gridLines;i++){
+      const px = g.w*i/gridLines;
+      gctx.beginPath(); gctx.moveTo(px,0); gctx.lineTo(px,g.h); gctx.stroke();
+      const py = g.h*i/gridLines;
+      gctx.beginPath(); gctx.moveTo(0,py); gctx.lineTo(g.w,py); gctx.stroke();
+    }
+
+    gctx.strokeStyle = '#5b6070';
+    gctx.lineWidth = 1.5;
+    if (g.ymin <= 0 && g.ymax >= 0){
+      const [,py] = dataToPx(0,0);
+      gctx.beginPath(); gctx.moveTo(0,py); gctx.lineTo(g.w,py); gctx.stroke();
+    }
+    if (g.xmin <= 0 && g.xmax >= 0){
+      const [px] = dataToPx(0,0);
+      gctx.beginPath(); gctx.moveTo(px,0); gctx.lineTo(px,g.h); gctx.stroke();
+    }
+
+    gctx.strokeStyle = '#5b8cff';
+    gctx.lineWidth = 2;
+    gctx.beginPath();
+    let started = false;
+    for (let i=0;i<g.xs.length;i++){
+      const y = g.ys[i];
+      if (!Number.isFinite(y)) { started = false; continue; }
+      const [px,py] = dataToPx(g.xs[i], y);
+      if (!started) { gctx.moveTo(px,py); started = true; }
+      else gctx.lineTo(px,py);
+    }
+    gctx.stroke();
+  }
+
+  document.getElementById('graphPlot').addEventListener('click', plotGraph);
+
+  document.getElementById('graphZoomIn').addEventListener('click', () => {
+    const xmin = Number(graphXMinInput.value), xmax = Number(graphXMaxInput.value);
+    const c = (xmin+xmax)/2, half = (xmax-xmin)/4;
+    graphXMinInput.value = (c-half).toString();
+    graphXMaxInput.value = (c+half).toString();
+    plotGraph();
+  });
+  document.getElementById('graphZoomOut').addEventListener('click', () => {
+    const xmin = Number(graphXMinInput.value), xmax = Number(graphXMaxInput.value);
+    const c = (xmin+xmax)/2, half = (xmax-xmin);
+    graphXMinInput.value = (c-half).toString();
+    graphXMaxInput.value = (c+half).toString();
+    plotGraph();
+  });
+
+  graphCanvas.addEventListener('click', (e) => {
+    if (!lastGraph) return;
+    const rect = graphCanvas.getBoundingClientRect();
+    const scaleX = graphCanvas.width / rect.width;
+    const px = (e.clientX - rect.left) * scaleX;
+    const dataX = lastGraph.xmin + (px/lastGraph.w)*(lastGraph.xmax-lastGraph.xmin);
+    let bestIdx = 0, bestDist = Infinity;
+    lastGraph.xs.forEach((x,i) => { const d = Math.abs(x-dataX); if (d<bestDist){ bestDist=d; bestIdx=i; } });
+    const y = lastGraph.ys[bestIdx];
+    graphTraceReadout.textContent = Number.isFinite(y)
+      ? `X = ${lastGraph.xs[bestIdx].toFixed(4)}   Y = ${y.toFixed(6)}`
+      : `X = ${lastGraph.xs[bestIdx].toFixed(4)}   Y = undefined`;
+  });
+
+  document.getElementById('graphSolve').addEventListener('click', () => {
+    const box = document.getElementById('graphResults');
+    box.style.display = 'block';
+    if (!lastGraph) { box.classList.add('error'); box.textContent = 'Plot a function first'; return; }
+    const { fnStr, xs, ys } = lastGraph;
+    const roots = [];
+    for (let i=0;i<xs.length-1;i++){
+      const y0 = ys[i], y1 = ys[i+1];
+      if (!Number.isFinite(y0) || !Number.isFinite(y1)) continue;
+      if (y0 === 0) { roots.push(xs[i]); continue; }
+      if (y0 * y1 < 0){
+        let lo = xs[i], hi = xs[i+1];
+        for (let iter=0; iter<50; iter++){
+          const mid = (lo+hi)/2;
+          const ym = evalFnAt(fnStr, mid);
+          if (!Number.isFinite(ym)) break;
+          const ylo = evalFnAt(fnStr, lo);
+          if ((ylo<0) === (ym<0)) lo = mid; else hi = mid;
+        }
+        roots.push((lo+hi)/2);
+      }
+    }
+    box.classList.remove('error');
+    if (roots.length === 0) box.textContent = 'No sign-change roots found in this x-range';
+    else {
+      const text = roots.map(r=>'x ≈ '+r.toFixed(8)).join('\n');
+      box.textContent = text;
+      addHistory('graph', `roots of ${fnStr}`, roots.map(r=>r.toFixed(6)).join(', '));
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // Base-N tab
+  // ---------------------------------------------------------------
+  function tokenizeBaseN(str){
+    const tokens = [];
+    let i=0;
+    const s = str.toUpperCase();
+    while (i<s.length){
+      const c = s[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if (c==='0' && (s[i+1]==='X' || s[i+1]==='O' || s[i+1]==='B')){
+        const kind = s[i+1];
+        let j=i+2;
+        const re = kind==='X' ? /[0-9A-F]/ : kind==='O' ? /[0-7]/ : /[01]/;
+        while (j<s.length && re.test(s[j])) j++;
+        const digits = s.slice(i+2,j);
+        if (!digits) throw new Error('Invalid literal at position ' + i);
+        const radix = kind==='X'?16:kind==='O'?8:2;
+        tokens.push({ type:'num', value: BigInt(parseIntBig(digits, radix)) });
+        i=j;
+      } else if (/[0-9]/.test(c)){
+        let j=i+1;
+        while (j<s.length && /[0-9]/.test(s[j])) j++;
+        tokens.push({ type:'num', value: BigInt(s.slice(i,j)) });
+        i=j;
+      } else if (s.slice(i,i+3)==='AND'){ tokens.push({type:'op',value:'AND'}); i+=3; }
+      else if (s.slice(i,i+2)==='OR'){ tokens.push({type:'op',value:'OR'}); i+=2; }
+      else if (s.slice(i,i+3)==='XOR'){ tokens.push({type:'op',value:'XOR'}); i+=3; }
+      else if (s.slice(i,i+3)==='NOT'){ tokens.push({type:'op',value:'NOT'}); i+=3; }
+      else if (s.slice(i,i+2)==='<<'){ tokens.push({type:'op',value:'<<'}); i+=2; }
+      else if (s.slice(i,i+2)==='>>'){ tokens.push({type:'op',value:'>>'}); i+=2; }
+      else if ('+-*/()'.includes(c)){ tokens.push({type: c==='('?'lparen':c===')'?'rparen':'op', value:c}); i++; }
+      else throw new Error('Unexpected character: ' + c);
+    }
+    return tokens;
+  }
+  function parseIntBig(digits, radix){
+    let result = 0n;
+    const R = BigInt(radix);
+    for (const ch of digits){ result = result*R + BigInt(parseInt(ch,radix)); }
+    return result.toString();
+  }
+  function parseBaseN(tokens){
+    let pos=0;
+    const peek=()=>tokens[pos], next=()=>tokens[pos++];
+    function expr(){
+      let left = term();
+      while (peek() && peek().type==='op' && ['+','-','OR','XOR'].includes(peek().value)){
+        const op = next().value;
+        const right = term();
+        if (op==='+') left = left+right;
+        else if (op==='-') left = left-right;
+        else if (op==='OR') left = left|right;
+        else if (op==='XOR') left = left^right;
+      }
+      return left;
+    }
+    function term(){
+      let left = unary();
+      while (peek() && peek().type==='op' && ['*','/','AND','<<','>>'].includes(peek().value)){
+        const op = next().value;
+        const right = unary();
+        if (op==='*') left = left*right;
+        else if (op==='/'){ if (right===0n) throw new Error('division by zero'); left = left/right; }
+        else if (op==='AND') left = left&right;
+        else if (op==='<<') left = left<<right;
+        else if (op==='>>') left = left>>right;
+      }
+      return left;
+    }
+    function unary(){
+      if (peek() && peek().type==='op' && peek().value==='-'){ next(); return -unary(); }
+      if (peek() && peek().type==='op' && peek().value==='NOT'){ next(); return ~unary(); }
+      return primary();
+    }
+    function primary(){
+      const t = peek();
+      if (!t) throw new Error('Unexpected end');
+      if (t.type==='num'){ next(); return t.value; }
+      if (t.type==='lparen'){ next(); const v=expr(); if(!peek()||peek().type!=='rparen') throw new Error('Expected )'); next(); return v; }
+      throw new Error('Unexpected token: ' + JSON.stringify(t));
+    }
+    const result = expr();
+    if (pos!==tokens.length) throw new Error('Unexpected trailing tokens');
+    return result;
+  }
+
+  document.getElementById('basenCompute').addEventListener('click', () => {
+    const box = document.getElementById('basenResults');
+    box.style.display = 'block';
+    try {
+      const raw = document.getElementById('basenInput').value;
+      const value = parseBaseN(tokenizeBaseN(raw));
+      const neg = value < 0n;
+      const abs = neg ? -value : value;
+      const text = `DEC: ${value.toString()}\nHEX: ${neg?'-':''}0x${abs.toString(16).toUpperCase()}\nOCT: ${neg?'-':''}0o${abs.toString(8)}\nBIN: ${neg?'-':''}0b${abs.toString(2)}`;
+      box.classList.remove('error');
+      box.textContent = text;
+      addHistory('base-n', raw, value.toString());
+    } catch(e){
+      box.classList.add('error');
+      box.textContent = 'Error: ' + e.message;
+    }
+  });
+
+  display.focus();
+  display.select();
 })();
 </script>
+
 </body>
 </html>
